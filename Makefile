@@ -10,8 +10,8 @@ LDFLAGS = $(shell sdl2-config --libs)
 # Target executable
 TARGET = sdl2_example
 
-# Source files
-SRCS = main.c
+# Source files (automatically find all .c files)
+SRCS = $(wildcard *.c)
 
 # Object files
 OBJS = $(SRCS:.c=.o)
