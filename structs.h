@@ -6,6 +6,8 @@ typedef struct
 {
     SDL_Renderer *renderer;
     SDL_Window *window;
+    //to track input types better explanation in input.c file function keyPressed
+    int up,down,left,right;
 } App;
 
 typedef struct

@@ -7,6 +7,7 @@
 #include"input.h"
 
 void cleanup();
+void move();
 
 App app;
 Entity player;
@@ -29,6 +30,9 @@ int main(void)
         prepareScene();
 
         doInput();
+
+        //move now can move the player while the key is pressed
+        move();
 
         drawTexture(player.texture,player.x,player.y);
 
@@ -58,4 +62,32 @@ void cleanup()
     IMG_Quit();
     SDL_Quit();
 
+}
+
+void move()
+{
+    if(app.up==1)
+    {
+        player.y-=5;
+    }
+
+    if(app.down==1)
+    {
+        player.y+=5;
+    }
+
+    if(app.left==1)
+    {
+        player.x-=5;
+    }
+
+    if(app.right==1)
+    {
+        player.x+=5;
+    }
+    //this part was for the test of the booster.
+    /*else if(app.right==2)
+    {
+        player.x+=10;
+    }*/
 }
