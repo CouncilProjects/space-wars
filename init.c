@@ -1,5 +1,5 @@
 #include"init.h"
-
+#include <SDL2/SDL_image.h>
 extern App app;// i tell it there is indeed an app somewhere. 
 
 void initSDL()
@@ -32,5 +32,11 @@ void initSDL()
         printf("Failed to create renderer\n");
         exit(1);
     }
-
+    
+    // Initilize image, make it able to load png and jpg
+    if(!IMG_Init(IMG_INIT_PNG | IMG_INIT_JPG))
+    {
+        printf("Failed to initialize image loader, %s\n",SDL_GetError());
+    }
+    
 }

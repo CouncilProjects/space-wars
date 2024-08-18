@@ -5,10 +5,10 @@ CC = gcc
 
 # Compiler flags (using sdl2-config for SDL2 flags)
 CFLAGS = $(shell sdl2-config --cflags)
-LDFLAGS = $(shell sdl2-config --libs)
+LDFLAGS = $(shell sdl2-config --libs) -lSDL2_image
 
 # Target executable
-TARGET = sdl2_example
+TARGET = Shooter_Game
 
 # Source files (automatically find all .c files)
 SRCS = $(wildcard *.c)
