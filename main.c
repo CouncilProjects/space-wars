@@ -8,21 +8,26 @@
 
 void cleanup();
 void move();
+void shoot();
 
 App app;
-Entity player;
+Entity player,bullet;
 int main(void)
 {
     
     memset(&app,0,sizeof(App));
     memset(&player,0,sizeof(Entity));
-    
+    memset(&bullet,0,sizeof(Entity));
+
     initSDL();
+
 
     player.x=110;
     player.y=110;
     player.texture=loadTexture("textures/player.png");
 
+    bullet.texture=loadTexture("textures/bullet.png");
+    
     atexit(cleanup);
 
     while(1)
@@ -32,8 +37,9 @@ int main(void)
         doInput();
 
         //move now can move the player while the key is pressed
+        
         move();
-
+        shoot();
         drawTexture(player.texture,player.x,player.y);
 
         presentScene();
@@ -90,4 +96,29 @@ void move()
     {
         player.x+=10;
     }*/
+}
+
+void shoot()
+{
+    if(app.fire && bullet.health==0)
+    {
+        bullet.x=player.x;
+        bullet.y=player.y;
+        bullet.dx=16;
+        bullet.dy=0;
+        bullet.health=1;
+    }
+
+    bullet.x+=bullet.dx;
+    bullet.y+=bullet.dy;
+
+    if(bullet.x > SCREEN_WIDTH)
+    {
+        bullet.health=0;
+    }
+
+    if(bullet.health>0)
+    {
+        drawTexture(bullet.texture,bullet.x,bullet.y);
+    }
 }
