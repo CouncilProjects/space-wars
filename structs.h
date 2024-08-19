@@ -30,6 +30,7 @@ typedef struct Entity
     int dy;
     int health;
     int reload;
+    int side;
     SDL_Texture *texture;
 
     struct Entity *next;  // Still use struct Entity here

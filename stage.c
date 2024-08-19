@@ -39,6 +39,7 @@ static void initPlayer()
     player->x=110;
     player->y=110;
     player->texture=loadTexture("textures/player.png");
+    player->side=PLAYER_SIDE;
 
     stage.fighterTail->next=player;
     stage.fighterTail=player;
@@ -101,11 +102,12 @@ static void handleEnemies()
         current->x+=current->dx;
         current->y+=current->dy;
 
-        if(current->x > SCREEN_WIDTH)
+        //if its not a player and its either offscreen or its dead remove it. 
+        if(current!=player && (current->x < -(current->w) || current->health==0))
         {
 
-            //if the current is not the player (so an enemy) and its x is somewhere where it would be offscreen (-w) delete it. 
-            if(current!=player && current->x < -(current->w))
+            
+            if(stage.fighterTail==current)
             {
                 stage.fighterTail=prev;
             }
@@ -143,6 +145,7 @@ static void fire(void)
     bullet->health=1;
     bullet->texture=bulletTexture;
     SDL_QueryTexture(bullet->texture,NULL,NULL,&bullet->w,&bullet->h);
+    bullet->side=PLAYER_SIDE;
 
     bullet->y= player->y+(player->h/2)-(bullet->h/2);
     
@@ -161,7 +164,7 @@ static void handleBullets(void)
     {
         current->x+=current->dx;
         
-        if(current->x > SCREEN_WIDTH)
+        if(current->x > SCREEN_WIDTH || bulletHit(current))
         {
 
             //if the current one is at the end of the list make the end of the lists its previous one.
@@ -177,6 +180,24 @@ static void handleBullets(void)
         }
 
     }
+}
+
+static int bulletHit(Entity *bullet)
+{
+    //we check each fighter to see if it collided. 
+    Entity *current;
+
+    for(current=stage.fighterHead.next;current!=NULL;current=current->next)
+    {
+        if(bullet->side!=current->side && bullet->health==1 && collision(bullet->x,bullet->y,bullet->w,bullet->h,current->x,current->y,current->w,current->h))
+        {
+            bullet->health=current->health=0;
+            return 1;
+        }
+    }
+
+    return 0;
+
 }
 
 static void spawnEnemies()
@@ -196,13 +217,28 @@ static void spawnEnemies()
     stage.fighterTail=enemy;
     enemy->x=SCREEN_WIDTH;
     enemy->y=rand()%SCREEN_HEIGHT;
-    //negatice dx so it move to the left of the screen. 
+    //negative dx so it move to the left of the screen. 
     enemy->dx=-(2+(rand()%5));
     enemy->dy=0;
+    enemy->health=1;
 
     enemy->texture=enemyTexture;
     SDL_QueryTexture(enemy->texture,NULL,NULL,&enemy->w,&enemy->h);
+    enemy->side=ALIEN_SIDE;
+    courseCorrection(enemy);
     enemySpawnTime=30+(rand()%50);
+}
+
+static void courseCorrection(Entity *enemy)
+{
+    if(enemy->y+enemy->h > SCREEN_HEIGHT)
+    {
+        enemy->y-=(int)enemy->h/2;
+    }
+    else if(enemy->y+enemy->h < 0)
+    {
+        enemy->y+=(int)enemy->h/2;
+    }
 }
 
 static void draw(void)
