@@ -5,30 +5,31 @@
 #include"draw.h"
 #include"init.h"
 #include"input.h"
+#include"stage.h"
 
 void cleanup();
-void move();
-void shoot();
+void capFrames();
 
 App app;
-Entity player,bullet;
+Stage stage;
+Entity *player;
+
 int main(void)
-{
+{   
+    long then;
+    float remainder;
     
     memset(&app,0,sizeof(App));
-    memset(&player,0,sizeof(Entity));
-    memset(&bullet,0,sizeof(Entity));
+    
 
     initSDL();
-
-
-    player.x=110;
-    player.y=110;
-    player.texture=loadTexture("textures/player.png");
-
-    bullet.texture=loadTexture("textures/bullet.png");
     
     atexit(cleanup);
+
+    initStage();
+
+    then=SDL_GetTicks64();
+    remainder=0;
 
     while(1)
     {
@@ -36,15 +37,12 @@ int main(void)
 
         doInput();
 
-        //move now can move the player while the key is pressed
-        
-        move();
-        shoot();
-        drawTexture(player.texture,player.x,player.y);
+        app.caller.logic();
+        app.caller.draw();
 
         presentScene();
 
-        SDL_Delay(18);
+        capFrames(&then,&remainder);
     }
 
     return 0;
@@ -70,55 +68,26 @@ void cleanup()
 
 }
 
-void move()
+void capFrames(long *then,float *remainder)
 {
-    if(app.up==1)
+    long wait,frameTime;
+
+    wait=16-*remainder;
+
+    *remainder-=(int)*remainder;
+
+    frameTime=SDL_GetTicks()-*then;
+
+    wait-=frameTime;
+
+    if (wait < 1)
     {
-        player.y-=5;
+        wait = 1;
     }
 
-    if(app.down==1)
-    {
-        player.y+=5;
-    }
+    SDL_Delay(wait);
 
-    if(app.left==1)
-    {
-        player.x-=5;
-    }
+    *remainder += 0.667;
 
-    if(app.right==1)
-    {
-        player.x+=5;
-    }
-    //this part was for the test of the booster.
-    /*else if(app.right==2)
-    {
-        player.x+=10;
-    }*/
-}
-
-void shoot()
-{
-    if(app.fire && bullet.health==0)
-    {
-        bullet.x=player.x;
-        bullet.y=player.y;
-        bullet.dx=16;
-        bullet.dy=0;
-        bullet.health=1;
-    }
-
-    bullet.x+=bullet.dx;
-    bullet.y+=bullet.dy;
-
-    if(bullet.x > SCREEN_WIDTH)
-    {
-        bullet.health=0;
-    }
-
-    if(bullet.health>0)
-    {
-        drawTexture(bullet.texture,bullet.x,bullet.y);
-    }
+    *then = SDL_GetTicks();
 }

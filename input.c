@@ -34,78 +34,23 @@ void doInput()
 void keyPressed(SDL_KeyboardEvent *event)
 {
     //we will only handle the event if its the first time it comes, ignoring repeats
-    if(event->repeat==0)
+    if(event->repeat==0 && event->keysym.scancode<MAX_KEYBOARD_KEYS)
     {
         //Reminder that (*event).keysym.scancode == event->keysym.scancode
         // keysym: is the key from which the event came, scancode is the hardware assosiated code. 
-        if(event->keysym.scancode==SDL_SCANCODE_UP)
-        {
-            app.up=1;
-        }
-
-        if(event->keysym.scancode==SDL_SCANCODE_DOWN)
-        {
-            app.down=1;
-        }
-
-        if(event->keysym.scancode==SDL_SCANCODE_LEFT)
-        {
-            app.left=1;
-        }
-
-        if(event->keysym.scancode==SDL_SCANCODE_RIGHT)
-        {
-            /* this is a way to make a booster
-                SDL_GetModState() returns a bitmask thats why we use the bitwize oparator &
-            if(SDL_GetModState() & KMOD_LSHIFT)
-            {
-                app.right=2;
-            }
-            else
-            {
-                 app.right=1;
-            }*/
-           app.right=1;
-           
-        }
-
-        if(event->keysym.scancode==SDL_SCANCODE_SPACE)
-        {
-            app.fire=1;
-        }
+        //Now the scancode will mark its corresponding sppot in the array as 1
+        app.keys[event->keysym.scancode]=1;
     }
 }
 
 void keyReleased(SDL_KeyboardEvent *event)
 {
     //we will only handle the event if its the first time it comes, ignoring repeats
-    if(event->repeat==0)
+    if(event->repeat==0 && event->keysym.scancode<MAX_KEYBOARD_KEYS)
     {
         //Reminder that (*event).keysym.scancode == event->keysym.scancode
         // keysym: is the key from which the event came, scancode is the hardware assosiated code. 
-        if(event->keysym.scancode==SDL_SCANCODE_UP)
-        {
-            app.up=0;
-        }
-
-        if(event->keysym.scancode==SDL_SCANCODE_DOWN)
-        {
-            app.down=0;
-        }
-
-        if(event->keysym.scancode==SDL_SCANCODE_LEFT)
-        {
-            app.left=0;
-        }
-
-        if(event->keysym.scancode==SDL_SCANCODE_RIGHT)
-        {
-            app.right=0;
-        }
-
-        if(event->keysym.scancode==SDL_SCANCODE_SPACE)
-        {
-            app.fire=0;
-        }
+        //Now the scancode will mark its corresponding sppot in the array as 1
+        app.keys[event->keysym.scancode]=0;
     }
 }
