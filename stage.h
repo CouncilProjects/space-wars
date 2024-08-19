@@ -8,8 +8,10 @@ static void initPlayer();
 static void logic(void);
 static void handlePlayer(void);
 static void fire(void);
+static void handleEnemies(void);
 static void handleBullets(void);
+static void spawnEnemies(void);
 static void draw(void);
-static void drawPlayer(void);
+static void drawShips(void);
 static void drawBullets(void);
 #endif

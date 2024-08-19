@@ -1,6 +1,7 @@
 #include<stdio.h>
 #include <stdlib.h>
 #include<SDL2/SDL_image.h>
+#include<time.h>
 #include"structs.h" //structs already contains common.h which has SDL2 header
 #include"draw.h"
 #include"init.h"
@@ -16,6 +17,7 @@ Entity *player;
 
 int main(void)
 {   
+    srand(time(NULL));
     long then;
     float remainder;
     

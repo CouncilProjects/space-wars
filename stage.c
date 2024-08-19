@@ -3,7 +3,9 @@
 extern App app;
 extern Stage stage;
 extern Entity *player;
-SDL_Texture *bulletTexture;
+SDL_Texture *bulletTexture,*enemyTexture;
+int enemySpawnTime;
+
 void initStage(void)
 {
     //assign the functions to the apps function caller
@@ -18,8 +20,11 @@ void initStage(void)
 
     initPlayer();
 
-    //cache the texture for repeated use later.
+    //cache the textures for repeated use later.
     bulletTexture=loadTexture("textures/bullet.png");
+    enemyTexture=loadTexture("textures/enemy.png");
+
+    enemySpawnTime=0;
 }
 
 static void initPlayer()
@@ -43,7 +48,9 @@ static void initPlayer()
 static void logic(void)
 {
     handlePlayer();
+    handleEnemies();
     handleBullets();
+    spawnEnemies();
 }
 
 static void handlePlayer(void)
@@ -80,9 +87,38 @@ static void handlePlayer(void)
         fire();
     }
 
-    player->x += player->dx;
-    player->y += player->dy;
 }
+
+static void handleEnemies()
+{
+    Entity *current,*prev;
+
+    prev=&stage.fighterHead;
+
+    //go through the list, move everyship and remove the non player ships that are off screen. 
+    for(current=stage.fighterHead.next;current!=NULL;prev=current,current=current->next)
+    {
+        current->x+=current->dx;
+        current->y+=current->dy;
+
+        if(current->x > SCREEN_WIDTH)
+        {
+
+            //if the current is not the player (so an enemy) and its x is somewhere where it would be offscreen (-w) delete it. 
+            if(current!=player && current->x < -(current->w))
+            {
+                stage.fighterTail=prev;
+            }
+
+            //if the current one is somewhere in the middle simple make the next of the previous show to the next of the current, then delete it.
+            prev->next=current->next;
+            free(current);
+            current=prev;
+        }
+
+    }
+}
+
 
 static void fire(void)
 {
@@ -143,15 +179,45 @@ static void handleBullets(void)
     }
 }
 
+static void spawnEnemies()
+{
+    enemySpawnTime--;
+
+    if(enemySpawnTime>0)
+    {
+        return;
+    }
+
+    Entity *enemy;
+    enemy=malloc(sizeof(Entity));
+    memset(enemy,0,sizeof(Entity));
+
+    stage.fighterTail->next=enemy;
+    stage.fighterTail=enemy;
+    enemy->x=SCREEN_WIDTH;
+    enemy->y=rand()%SCREEN_HEIGHT;
+    //negatice dx so it move to the left of the screen. 
+    enemy->dx=-(2+(rand()%5));
+    enemy->dy=0;
+
+    enemy->texture=enemyTexture;
+    SDL_QueryTexture(enemy->texture,NULL,NULL,&enemy->w,&enemy->h);
+    enemySpawnTime=30+(rand()%50);
+}
+
 static void draw(void)
 {
-    drawPlayer();
+    drawShips();
     drawBullets();
 }
 
-static void drawPlayer(void)
+static void drawShips(void)
 {
-    drawTexture(player->texture,player->x,player->y);
+    Entity *current;
+    for(current=stage.fighterHead.next;current!=NULL;current=current->next)
+    {
+        drawTexture(current->texture,current->x,current->y);
+    }
 }
 
 static void drawBullets(void)
