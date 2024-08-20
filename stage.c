@@ -3,9 +3,10 @@
 extern App app;
 extern Stage stage;
 extern Entity *player;
-SDL_Texture *bulletTexture,*enemyTexture;
-int enemySpawnTime;
+SDL_Texture *bulletTexture,*enemyTexture,*alienBulletTexture,*playerTexture;
+int enemySpawnTime,stageResetTimer;
 
+//Initializes basic resources [fighter & bullet lists, player,textures,app function callers]
 void initStage(void)
 {
     //assign the functions to the apps function caller
@@ -23,39 +24,94 @@ void initStage(void)
     //cache the textures for repeated use later.
     bulletTexture=loadTexture("textures/bullet.png");
     enemyTexture=loadTexture("textures/enemy.png");
+    alienBulletTexture = loadTexture("textures/alienBullet.png");
+    playerTexture = loadTexture("textures/player.png");
 
+    resetStage();
     enemySpawnTime=0;
 }
 
+//Resets the screen after player has been destroyed
+static void resetStage(void)
+{
+    Entity *e;
+
+    //empty the fighter list
+    while (stage.fighterHead.next)
+    {
+        e = stage.fighterHead.next;
+        stage.fighterHead.next = e->next;
+        free(e);
+    }
+     //empty the bullet list
+    while (stage.bulletHead.next)
+    {
+        e = stage.bulletHead.next;
+        stage.bulletHead.next = e->next;
+        free(e);
+    }
+
+    memset(&stage, 0, sizeof(Stage));
+    //restart the list tails
+    stage.fighterTail = &stage.fighterHead;
+    stage.bulletTail = &stage.bulletHead;
+
+    //make new player
+    initPlayer();
+
+    enemySpawnTime = 10;
+
+    stageResetTimer = FPS * 2;
+}
+
+//Initializes a player ship. 
 static void initPlayer()
 {
     player=malloc(sizeof(Entity));
     if(player==NULL)
     {
-        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,"Error","Error making player (bad malloc)",NULL);
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,"Error","Error making player",NULL);
     }
 
     memset(player,0,sizeof(Entity));
     player->x=110;
     player->y=110;
-    player->texture=loadTexture("textures/player.png");
+    player->health=1;
+    player->texture=playerTexture;
+    SDL_QueryTexture(player->texture,NULL,NULL,&player->w,&player->h);
+    SDL_QueryTexture(player->texture,NULL,NULL,&player->w,&player->h);
     player->side=PLAYER_SIDE;
-
+    
+    //place player ship in the list
     stage.fighterTail->next=player;
     stage.fighterTail=player;
-    SDL_QueryTexture(player->texture,NULL,NULL,&player->w,&player->h);
 }
 
+//Calls the series of functions that control the flow of the game [controlPlayer,handleShips,enemiesShoot,handleBullets,spawnEnemies,clipPlayer,resetStage]
 static void logic(void)
 {
-    handlePlayer();
-    handleEnemies();
+    controlPlayer();
+    handleShips();
+    enemiesShoot();
     handleBullets();
     spawnEnemies();
+    clipPlayer();
+    if (player == NULL)
+    {
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION,"You died","Press OK to restart",NULL);
+        resetStage();
+    }
 }
 
-static void handlePlayer(void)
+//Controls player actions based on user input
+static void controlPlayer(void)
 {
+
+    if(player==NULL)
+    {
+        return;
+    }
+
     player->dx=player->dy=0;
 
     if(player->reload>0)
@@ -90,38 +146,92 @@ static void handlePlayer(void)
 
 }
 
-static void handleEnemies()
+// Moves every ship on screen (inside the fighter list) removing those that are off-screen or destroyed
+static void handleShips()
 {
     Entity *current,*prev;
 
     prev=&stage.fighterHead;
 
+    if(player==NULL)
+    {
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,"The is no player in handle enemy","I have no idea why",NULL);
+    }
     //go through the list, move everyship and remove the non player ships that are off screen. 
     for(current=stage.fighterHead.next;current!=NULL;prev=current,current=current->next)
     {
         current->x+=current->dx;
         current->y+=current->dy;
 
-        //if its not a player and its either offscreen or its dead remove it. 
-        if(current!=player && (current->x < -(current->w) || current->health==0))
-        {
+        current->x += current->dx;
+        current->y += current->dy;
 
-            
-            if(stage.fighterTail==current)
+        if (current != player && current->x < -current->w)
+        {
+            current->health = 0;
+        }
+
+        if (current->health == 0)
+        {
+            if (current == player)
             {
-                stage.fighterTail=prev;
+                player = NULL;
             }
 
-            //if the current one is somewhere in the middle simple make the next of the previous show to the next of the current, then delete it.
-            prev->next=current->next;
+            if (current == stage.fighterTail)
+            {
+                stage.fighterTail = prev;
+            }
+
+            prev->next = current->next;
             free(current);
-            current=prev;
+            current = prev;
         }
 
     }
 }
 
+//Orders every enemy ship with available projectile to shoot.
+static void enemiesShoot(void)
+{
+    Entity *e;
 
+    for (e = stage.fighterHead.next ; e != NULL ; e = e->next)
+    {
+        if (e != player && player != NULL && --e->reload <= 0)
+        {
+            fireAlienBullet(e);
+        }
+    }
+}
+
+//Enemy specific firing mechanism
+static void fireAlienBullet(Entity *e)
+{
+    Entity *bullet;
+
+    bullet = malloc(sizeof(Entity));
+    memset(bullet, 0, sizeof(Entity));
+    stage.bulletTail->next = bullet;
+    stage.bulletTail = bullet;
+
+    bullet->health = 1;
+    bullet->texture = alienBulletTexture;
+    bullet->side = ALIEN_SIDE;
+    SDL_QueryTexture(bullet->texture, NULL, NULL, &bullet->w, &bullet->h);
+
+    bullet->x +=e->x+ (e->w / 2) - (bullet->w / 2);
+    bullet->y +=e->y+ (e->h / 2) - (bullet->h / 2);
+
+    calcSlope(player->x + (player->w / 2), player->y + (player->h / 2), e->x, e->y, &bullet->dx, &bullet->dy);
+
+    bullet->dx *= ALIEN_BULLET_SPEED+e->dx;
+    bullet->dy *= ALIEN_BULLET_SPEED;
+
+    e->reload = (rand() % FPS * 2);
+}
+
+//Player specific firing mechanism
 static void fire(void)
 {
     
@@ -154,6 +264,7 @@ static void fire(void)
     player->reload=8;
 }
 
+//Moves every bullet existing on the map. removing those out of the screen or those that collided
 static void handleBullets(void)
 {
     Entity *current,*prev;
@@ -164,7 +275,7 @@ static void handleBullets(void)
     {
         current->x+=current->dx;
         
-        if(current->x > SCREEN_WIDTH || bulletHit(current))
+        if(bulletHit(current) || current->x < -current->w || current->y < -current->h || current->x > SCREEN_WIDTH || current->y > SCREEN_HEIGHT)
         {
 
             //if the current one is at the end of the list make the end of the lists its previous one.
@@ -182,6 +293,7 @@ static void handleBullets(void)
     }
 }
 
+//Checks if the bullet has collided with any ships.
 static int bulletHit(Entity *bullet)
 {
     //we check each fighter to see if it collided. 
@@ -200,6 +312,7 @@ static int bulletHit(Entity *bullet)
 
 }
 
+//Periodically make a new enemy and add it to the fighter list.
 static void spawnEnemies()
 {
     enemySpawnTime--;
@@ -226,9 +339,38 @@ static void spawnEnemies()
     SDL_QueryTexture(enemy->texture,NULL,NULL,&enemy->w,&enemy->h);
     enemy->side=ALIEN_SIDE;
     courseCorrection(enemy);
+    enemy->reload = FPS * (1 + (rand() % 3));
     enemySpawnTime=30+(rand()%50);
 }
 
+//Makes the player unable to go beyond the screen
+static void clipPlayer(void)
+{
+    if (player != NULL)
+    {
+        if (player->x < 0)
+        {
+            player->x = 0;
+        }
+
+        if (player->y < 0)
+        {
+            player->y = 0;
+        }
+        
+        if (player->x > SCREEN_WIDTH-player->w)
+        {
+            player->x = SCREEN_WIDTH-player->w;
+        }
+
+        if (player->y > SCREEN_HEIGHT - player->h)
+        {
+            player->y = SCREEN_HEIGHT - player->h;
+        }
+    }
+}
+
+// Makes enemies unable to spawn off-screen
 static void courseCorrection(Entity *enemy)
 {
     if(enemy->y+enemy->h > SCREEN_HEIGHT)
@@ -241,12 +383,14 @@ static void courseCorrection(Entity *enemy)
     }
 }
 
+//Calls the series of functions that control the graphics of the game [drawShips,drawBullets]
 static void draw(void)
 {
     drawShips();
     drawBullets();
 }
 
+//Draws every ship on screen with updated coordinates
 static void drawShips(void)
 {
     Entity *current;
@@ -256,6 +400,7 @@ static void drawShips(void)
     }
 }
 
+//Draws every bullet on screen with updated coordinates
 static void drawBullets(void)
 {
     Entity *current;
