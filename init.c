@@ -1,7 +1,8 @@
 #include"init.h"
-#include <SDL2/SDL_image.h>
+#include "SDL_image.h"
 extern App app;// i tell it there is indeed an app somewhere. 
 
+//Sets up the SDL enviroment
 void initSDL()
 {
 
@@ -26,6 +27,7 @@ void initSDL()
 
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY,"linear");
 
+    //-1 indicates to use the first available renderer driver it finds that supports the requirments
     app.renderer=SDL_CreateRenderer(app.window,-1,rendererFlags);
     if(!app.renderer)
     {

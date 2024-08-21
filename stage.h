@@ -54,4 +54,5 @@ static void drawShips(void);
 
 //Draws every bullet on screen with updated coordinates
 static void drawBullets(void);
+
 #endif

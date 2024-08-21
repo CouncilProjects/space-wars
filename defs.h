@@ -8,10 +8,7 @@
 #define MAX_KEYBOARD_KEYS 350
 #define PLAYER_SIDE 0
 #define ALIEN_SIDE 1
-
 #define FPS 60
-
 #define ALIEN_BULLET_SPEED    8
-
 
 #endif

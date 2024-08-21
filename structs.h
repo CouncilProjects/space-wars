@@ -42,4 +42,5 @@ typedef struct
     Entity fighterHead, *fighterTail;
     Entity bulletHead,*bulletTail;
 } Stage;
+
 #endif // STRUCT_H

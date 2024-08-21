@@ -2,12 +2,13 @@
 
 extern App app;
 
+
+//take the incoming input events from the queque
 void doInput()
 {
     SDL_Event event;
 
     //take events as long as there are
-    //for now only react to closing
     while(SDL_PollEvent(&event))
     {
         switch (event.type)
@@ -29,8 +30,10 @@ void doInput()
 }
 
 
-//This event fires only once, because we want continious movement we use the app variables that simply stay 1 as long as its not released insted of pressing it many 
-//times
+//This events such ass keyPressed or keyReleased ocure only once.Because we want continious movement 
+//we use the app variables that simply stay 1 as long as its not released insted of pressing it many times
+
+//Notifies when a key is pressed Parameter[a pointer to the triggering event]
 void keyPressed(SDL_KeyboardEvent *event)
 {
     //we will only handle the event if its the first time it comes, ignoring repeats
@@ -43,6 +46,7 @@ void keyPressed(SDL_KeyboardEvent *event)
     }
 }
 
+//Notifies when a key is released Parameter[a pointer to the triggering event]
 void keyReleased(SDL_KeyboardEvent *event)
 {
     //we will only handle the event if its the first time it comes, ignoring repeats
