@@ -35,3 +35,17 @@ void drawTexture(SDL_Texture *texture,int x,int y)
     //render a copy of the tecture. The null argument tell it to render it whole 
     SDL_RenderCopy(app.renderer,texture,NULL,&dest);
 }
+
+//Draw the src part of the given texture at coordinates x,y.
+void drawPartialTexture(SDL_Texture *texture,SDL_Rect *src,int x,int y)
+{
+    SDL_Rect dest;
+    //in dest put the size of the src
+    dest.x=x;
+    dest.y=y;
+    dest.h=src->h;
+    dest.w=src->w;
+    
+    //now draw it but only the part of the texture that src allows
+    SDL_RenderCopy(app.renderer,texture,src,&dest);
+}

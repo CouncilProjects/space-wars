@@ -14,4 +14,7 @@ SDL_Texture *loadTexture(char* fileName);
 
 //Draw a texture at the coordinates x,y
 void drawTexture(SDL_Texture *texture,int x,int y);
+
+//Draw the src part of the given texture at coordinates x,y.
+void drawPartialTexture(SDL_Texture *texture,SDL_Rect *src,int x,int y);
 #endif

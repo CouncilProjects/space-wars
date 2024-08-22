@@ -10,5 +10,6 @@
 #define ALIEN_SIDE 1
 #define FPS 60
 #define ALIEN_BULLET_SPEED    8
+#define MAX_STARS 500
 
 #endif

@@ -10,6 +10,9 @@ void initStage(void);
 //Resets the screen after player has been destroyed
 static void resetStage(void);
 
+//Sets the star array with rando star positions
+static void initStarfield(void);
+
 //Initializes a player ship. 
 static void initPlayer(void);
 
@@ -43,11 +46,38 @@ static void spawnEnemies(void);
 //Makes the player unable to go beyond the screen
 static void clipPlayer(void);
 
+//Sets the star array with rando star positions
+static void initStarfield();
+
+//makes sure the backround is always in place.
+static void  handleBackround();
+
+//moves every star in the static array, warping them when they reach the end of the screen.
+static void  moveStarfield();
+
+//Creates a series of explosions in different colors
+static void addExplosion(int x,int y,int num);
+
+//cuts the texture to 4 parts adding each one as a "debri"
+static void addDebris(Entity *en);
+
+//moves the explosions, removing them if they surpass their lifetimes
+static void handleExplosion();
+
+//moves the debri, removing them if they surpass their lifetimes
+static void handleDebris(void);
+
 // Makes enemies unable to spawn off-screen
 static void courseCorrection(Entity *enemy);
 
 //Calls the series of functions that control the graphics of the game [drawShips,drawBullets]
 static void draw(void);
+
+//Sets the background to the size of the screen
+static void drawBackround(void);
+
+//set the color of the stars and draw them as lines
+static void drawStarfield(void);
 
 //Draws every ship on screen with updated coordinates
 static void drawShips(void);
@@ -55,4 +85,9 @@ static void drawShips(void);
 //Draws every bullet on screen with updated coordinates
 static void drawBullets(void);
 
+//goes through the list drawing every debri
+static void drawDebris(void);
+
+//goes through the list drawing every explosion
+static void drawExplosions(void);
 #endif

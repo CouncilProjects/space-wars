@@ -3,8 +3,10 @@
 extern App app;
 extern Stage stage;
 extern Entity *player;
-SDL_Texture *bulletTexture,*enemyTexture,*alienBulletTexture,*playerTexture;
+SDL_Texture *bulletTexture,*enemyTexture,*alienBulletTexture,*playerTexture,*explosionTexture,*backgroundTexture;
 int enemySpawnTime,stageResetTimer;
+int backroundX;
+static Star stars[MAX_STARS];
 
 //Initializes basic resources [fighter & bullet lists, player,textures,app function callers]
 void initStage(void)
@@ -15,17 +17,24 @@ void initStage(void)
 
     //set the memory of stage to zero
     memset(&stage,0,sizeof(stage));
-    //set its pointers
+    //set the pointers of the lists with assets
     stage.fighterTail=&stage.fighterHead;
     stage.bulletTail=&stage.bulletHead;
+    stage.explosionTail=&stage.explosionHead;
+    stage.debrisTail=&stage.debrisHead;
 
-    initPlayer();
 
     //cache the textures for repeated use later.
     bulletTexture=loadTexture("textures/bullet.png");
     enemyTexture=loadTexture("textures/enemy.png");
     alienBulletTexture = loadTexture("textures/alienBullet.png");
     playerTexture = loadTexture("textures/player.png");
+    explosionTexture=loadTexture("textures/explosion.png");
+    backgroundTexture=loadTexture("textures/background.png");
+    if(backgroundTexture==NULL)
+    {
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,"error","Background texture did not load",NULL);
+    }
 
     resetStage();
     enemySpawnTime=0;
@@ -35,6 +44,8 @@ void initStage(void)
 static void resetStage(void)
 {
     Entity *e;
+    Explosion *ex;
+    Debris *de;
 
     //empty the fighter list
     while (stage.fighterHead.next)
@@ -51,17 +62,52 @@ static void resetStage(void)
         free(e);
     }
 
+    //empty the debri list
+    while (stage.debrisHead.next)
+    {
+        de=stage.debrisHead.next;
+        stage.debrisHead.next=de->next;
+        free(de);
+    }
+    //empty the explosion list
+    while (stage.explosionHead.next)
+    {
+        ex=stage.explosionHead.next;
+        stage.explosionHead.next=ex->next;
+        free(ex);
+    }
+    
+
     memset(&stage, 0, sizeof(Stage));
     //restart the list tails
-    stage.fighterTail = &stage.fighterHead;
-    stage.bulletTail = &stage.bulletHead;
+    stage.fighterTail=&stage.fighterHead;
+    stage.bulletTail=&stage.bulletHead;
+    stage.explosionTail=&stage.explosionHead;
+    stage.debrisTail=&stage.debrisHead;
+
+
+    //make starfield
+    initStarfield();
 
     //make new player
     initPlayer();
 
+
     enemySpawnTime = 10;
 
-    stageResetTimer = FPS * 2;
+    stageResetTimer = FPS * 3;
+}
+
+//Sets the star array with rando star positions
+static void initStarfield()
+{
+    int i;
+    for(i=0;i<MAX_STARS;i++)
+    {
+        stars[i].x=rand()%SCREEN_WIDTH;
+        stars[i].y=rand()%SCREEN_HEIGHT;
+        stars[i].speed=1+(rand()%8);
+    }
 }
 
 //Initializes a player ship. 
@@ -79,7 +125,6 @@ static void initPlayer()
     player->health=1;
     player->texture=playerTexture;
     SDL_QueryTexture(player->texture,NULL,NULL,&player->w,&player->h);
-    SDL_QueryTexture(player->texture,NULL,NULL,&player->w,&player->h);
     player->side=PLAYER_SIDE;
     
     //place player ship in the list
@@ -90,12 +135,16 @@ static void initPlayer()
 //Calls the series of functions that control the flow of the game [controlPlayer,handleShips,enemiesShoot,handleBullets,spawnEnemies,clipPlayer,resetStage]
 static void logic(void)
 {
+    handleBackround();
+    moveStarfield();
     controlPlayer();
     handleShips();
     enemiesShoot();
     handleBullets();
     spawnEnemies();
     clipPlayer();
+    handleExplosion();
+    handleDebris();
     if (player == NULL)
     {
         SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION,"You died","Press OK to restart",NULL);
@@ -103,6 +152,29 @@ static void logic(void)
     }
 }
 
+//makes sure the backround is always in place. 
+static void  handleBackround()
+{
+    if(--backroundX < -SCREEN_WIDTH)
+    {
+        backroundX=0;
+    }
+}
+
+//moves every star in the static array, warping them when they reach the end of the screen.
+static void  moveStarfield()
+{
+    int i;
+    for(i=0;i<MAX_STARS;i++)
+    {
+        stars[i].x-=stars[i].speed;
+
+        if(stars[i].x < 0)
+        {
+            stars[i].x=SCREEN_WIDTH+stars[i].x;
+        }
+    }
+}
 //Controls player actions based on user input
 static void controlPlayer(void)
 {
@@ -183,6 +255,13 @@ static void handleShips()
                 stage.fighterTail = prev;
             }
 
+            //maybe
+            if (current != player && current->x >0)
+            {
+                addDebris(current);
+                addExplosion(current->x,current->y,2);
+            }
+            //addExplosion(current->x,current->y,3);
             prev->next = current->next;
             free(current);
             current = prev;
@@ -191,6 +270,93 @@ static void handleShips()
     }
 }
 
+//Creates a series of explosions in different colors
+static void addExplosion(int x,int y,int num)
+{
+    Explosion *ex;
+    int i;
+    for(i=0;i<num;i++)
+    {
+        ex=malloc(sizeof(Explosion));
+        memset(ex,0,sizeof(Explosion));
+
+        stage.explosionTail->next=ex;
+        stage.explosionTail=ex;
+
+        ex->x = x + (rand() % 32) - (rand() % 32);
+        ex->y = y + (rand() % 32) - (rand() % 32);
+        ex->dx = (rand() % 10) - (rand() % 10);
+        ex->dy = (rand() % 10) - (rand() % 10);
+
+        ex->dx /= 10;
+        ex->dy /= 10;
+
+        //we queque up many explotions to make colors
+        switch (rand()%4)
+        {
+        case 0:
+            ex->r=255;
+            break;
+        case 1:
+            ex->r=255;
+            ex->g=128;
+            break;
+        case 2:
+            ex->r=255;
+            ex->g=255;
+            break;
+        
+        default:
+            ex->r = 255;
+            ex->g = 255;
+            ex->b = 255;
+            break;
+        }
+        //a is its time to live
+        ex->a = rand() % FPS * 3;
+    }
+}
+
+//cuts the texture to 4 parts adding each one as a "debri"
+static void addDebris(Entity *en)
+{
+    Debris *d;
+    int x, y, w, h;
+    //we devide by 2 then with a double for it will split the texture to 4 parts. 
+    w=en->w/2;
+    h=en->h/2;
+
+    for(y=0;y<en->h;y+=h)
+    {
+        for(x=0;x<en->w;x+=w)
+        {
+            d=malloc(sizeof(Debris));
+            memset(d,0,sizeof(Debris));
+
+            d->x=en->x+w;
+            d->y=en->y+h;
+
+            d->dx=(rand()%5)-(rand()%5);
+            d->dy=-(5+rand()%12);
+            d->life=FPS*2;
+            d->texture=en->texture;
+            if(d->texture==NULL)
+            {
+                SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,"error","No debri texture",NULL);
+            }
+
+            // what part of the texture it covers. 
+            d->rect.x=x;
+            d->rect.y=y;
+            d->rect.w=w;
+            d->rect.h=h;
+
+            stage.debrisTail->next=d;
+            stage.debrisTail=d;
+
+        }
+    }
+}
 //Orders every enemy ship with available projectile to shoot.
 static void enemiesShoot(void)
 {
@@ -370,6 +536,58 @@ static void clipPlayer(void)
     }
 }
 
+//moves the explosions, removing them if they surpass their lifetime
+static void handleExplosion()
+{
+    Explosion *current,*prev;
+    prev=&stage.explosionHead;
+
+    for(current=stage.explosionHead.next;current!=NULL;prev=current,current=current->next)
+    {
+        current->x+=current->dx;
+        current->y+=current->dy;
+
+        if(--current->a < 0)
+        {
+            if(current==stage.explosionTail)
+            {
+                stage.explosionTail=prev;
+            }
+
+            prev->next=current->next;
+            free(current);
+            current=prev;
+        }
+    }
+    
+}
+
+//moves the debri, removing them if they surpass their lifetime
+static void handleDebris()
+{
+    Debris *current,*prev;
+    prev=&stage.debrisHead;
+
+    for(current=stage.debrisHead.next;current!=NULL;prev=current,current=current->next)
+    {
+        current->x+=current->dx;
+        current->y+=current->dy;
+        current->dy+=0.5;
+        if(--current->life < 0)
+        {
+            if(current==stage.debrisTail)
+            {
+                stage.debrisTail=prev;
+            }
+
+            prev->next=current->next;
+            free(current);
+            current=prev;
+        }
+    }
+    
+}
+
 // Makes enemies unable to spawn off-screen
 static void courseCorrection(Entity *enemy)
 {
@@ -386,8 +604,44 @@ static void courseCorrection(Entity *enemy)
 //Calls the series of functions that control the graphics of the game [drawShips,drawBullets]
 static void draw(void)
 {
+    drawBackround();
+    drawStarfield();
+
     drawShips();
     drawBullets();
+    drawExplosions();
+
+    drawDebris();
+}
+
+//Sets the background to the size of the screen
+static void drawBackround()
+{
+    SDL_Rect rect;
+    int x;
+    for(x=0;x<SCREEN_WIDTH;x+=SCREEN_WIDTH)
+    {
+        rect.x=x;
+        rect.y=0;
+        rect.h=SCREEN_HEIGHT;
+        rect.w=SCREEN_WIDTH;
+
+        SDL_RenderCopy(app.renderer,backgroundTexture,NULL,&rect);
+    }
+}
+
+//set the color of the stars and draw them as lines
+static void drawStarfield(void)
+{
+    int i,c;
+    for(i=0;i<MAX_STARS;i++)
+    {
+        c=32*stars[i].speed;
+
+        SDL_SetRenderDrawColor(app.renderer,c,c,c,255);
+
+        SDL_RenderDrawLine(app.renderer,stars[i].x,stars[i].y,stars[i].x+3,stars[i].y);
+    }
 }
 
 //Draws every ship on screen with updated coordinates
@@ -408,4 +662,37 @@ static void drawBullets(void)
     {
         drawTexture(current->texture,current->x,current->y);
     }
+}
+
+//goes through the list drawing every debri
+static void drawDebris()
+{
+    Debris *current;
+    for(current=stage.debrisHead.next;current!=NULL;current=current->next)
+    {
+        drawPartialTexture(current->texture,&current->rect,current->x,current->y);
+    }
+}
+
+
+//goes through the list drawing every explosion
+static void drawExplosions()
+{
+    Explosion *e;
+
+    SDL_SetRenderDrawBlendMode(app.renderer,SDL_BLENDMODE_ADD);
+    //Enable additive blending, when adding textures one upon the other they blend colours
+    SDL_SetTextureBlendMode(explosionTexture,SDL_BLENDMODE_ADD);
+
+    for(e=stage.explosionHead.next;e!=NULL;e=e->next)
+    {
+        SDL_SetTextureColorMod(explosionTexture,e->r,e->g,e->b);
+        SDL_SetTextureAlphaMod(explosionTexture,e->a);
+
+        drawTexture(explosionTexture,e->x,e->y);
+    }
+
+    SDL_SetRenderDrawBlendMode(app.renderer, SDL_BLENDMODE_NONE);
+
+
 }

@@ -36,11 +36,37 @@ typedef struct Entity
     struct Entity *next;  // Still use struct Entity here
 } Entity;
 
+typedef struct Explosion
+{
+    float x,y,dx,dy;
+    int r,g,b,a;
+    struct Explosion *next;
+} Explosion;
+
+
+
+typedef struct Debris
+{
+    float x,y,dx,dy;
+    SDL_Rect rect;
+    SDL_Texture *texture;
+    int life;
+    struct Debris *next;
+} Debris;
+
 typedef struct 
 {
-    //Holds information about the fighters and bullets. 
+    //Holds information about the fighters,bullets,explosions,debris. 
     Entity fighterHead, *fighterTail;
     Entity bulletHead,*bulletTail;
+    Debris debrisHead,*debrisTail;
+    Explosion explosionHead,*explosionTail;
 } Stage;
 
+
+
+typedef struct
+{
+    int x,y,speed;
+} Star;
 #endif // STRUCT_H
