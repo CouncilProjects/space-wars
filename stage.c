@@ -36,6 +36,7 @@ void initStage(void)
         SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,"error","Background texture did not load",NULL);
     }
 
+
     resetStage();
     enemySpawnTime=0;
 }
@@ -95,7 +96,7 @@ static void resetStage(void)
 
     enemySpawnTime = 10;
 
-    stageResetTimer = FPS * 3;
+    stageResetTimer = FPS * 4;
 }
 
 //Sets the star array with rando star positions
@@ -213,6 +214,7 @@ static void controlPlayer(void)
 
     if(app.keys[SDL_SCANCODE_SPACE] && player->reload==0)
     {
+        playSound(SND_PLAYER_FIRE,ch_player);
         fire();
     }
 
@@ -247,6 +249,8 @@ static void handleShips()
         {
             if (current == player)
             {
+                playSound(SND_PLAYER_DIE,ch_player);
+                addDebris(current);
                 player = NULL;
             }
 
@@ -258,10 +262,10 @@ static void handleShips()
             //maybe
             if (current != player && current->x >0)
             {
+                playSound(SND_ALIEN_DIE,ch_any);
                 addDebris(current);
-                addExplosion(current->x,current->y,2);
+                addExplosion(current->x,current->y,3);
             }
-            //addExplosion(current->x,current->y,3);
             prev->next = current->next;
             free(current);
             current = prev;
@@ -366,6 +370,7 @@ static void enemiesShoot(void)
     {
         if (e != player && player != NULL && --e->reload <= 0)
         {
+            playSound(SND_ALIEN_FIRE,ch_alien_fire);
             fireAlienBullet(e);
         }
     }
@@ -388,7 +393,6 @@ static void fireAlienBullet(Entity *e)
 
     bullet->x +=e->x+ (e->w / 2) - (bullet->w / 2);
     bullet->y +=e->y+ (e->h / 2) - (bullet->h / 2);
-
     calcSlope(player->x + (player->w / 2), player->y + (player->h / 2), e->x, e->y, &bullet->dx, &bullet->dy);
 
     bullet->dx *= ALIEN_BULLET_SPEED+e->dx;

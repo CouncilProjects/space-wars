@@ -1,5 +1,6 @@
 #include"init.h"
 #include "SDL_image.h"
+#include"SDL_mixer.h"
 extern App app;// i tell it there is indeed an app somewhere. 
 
 //Sets up the SDL enviroment
@@ -41,4 +42,12 @@ void initSDL()
         printf("Failed to initialize image loader, %s\n",SDL_GetError());
     }
     
+    if(Mix_OpenAudio(44100,MIX_DEFAULT_FORMAT,2,1024)==-1)
+    {
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION,"Error","Could not open audio",NULL);
+        exit(1);
+    }
+
+    //how many different sounds can play
+    Mix_AllocateChannels(MAX_SND_CHANNELS);
 }

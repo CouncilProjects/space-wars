@@ -3,7 +3,7 @@
 #include"structs.h"
 #include"draw.h"
 #include"utility.h"
-
+#include"sound.h"
 //Initializes basic resources [fighter & bullet lists, player,textures,app function callers]
 void initStage(void);
 

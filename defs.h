@@ -12,4 +12,21 @@
 #define ALIEN_BULLET_SPEED    8
 #define MAX_STARS 500
 
+#define MAX_SND_CHANNELS 8
+
+enum
+{
+    ch_any=-1,
+    ch_player,
+    ch_alien_fire
+};
+
+enum
+{
+    SND_PLAYER_FIRE,
+    SND_ALIEN_FIRE,
+    SND_PLAYER_DIE,
+    SND_ALIEN_DIE,
+    SND_MAX
+};
 #endif
