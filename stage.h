@@ -4,6 +4,7 @@
 #include"draw.h"
 #include"utility.h"
 #include"sound.h"
+#include"text.h"
 //Initializes basic resources [fighter & bullet lists, player,textures,app function callers]
 void initStage(void);
 
@@ -90,4 +91,7 @@ static void drawDebris(void);
 
 //goes through the list drawing every explosion
 static void drawExplosions(void);
+
+//Displayes the text for score and highscore
+static void drawHUD();
 #endif

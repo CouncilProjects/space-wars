@@ -36,7 +36,7 @@ void initStage(void)
         SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,"error","Background texture did not load",NULL);
     }
 
-
+    app.highScore=0;
     resetStage();
     enemySpawnTime=0;
 }
@@ -86,7 +86,8 @@ static void resetStage(void)
     stage.explosionTail=&stage.explosionHead;
     stage.debrisTail=&stage.debrisHead;
 
-
+    //reset score
+    stage.score=0;
     //make starfield
     initStarfield();
 
@@ -259,10 +260,12 @@ static void handleShips()
                 stage.fighterTail = prev;
             }
 
-            //maybe
+            //stuff to do when enemy is killed.
             if (current != player && current->x >0)
             {
                 playSound(SND_ALIEN_DIE,ch_any);
+                stage.score++;
+                app.highScore=SDL_max(stage.score,app.highScore);
                 addDebris(current);
                 addExplosion(current->x,current->y,3);
             }
@@ -616,6 +619,7 @@ static void draw(void)
     drawExplosions();
 
     drawDebris();
+    drawHUD();
 }
 
 //Sets the background to the size of the screen
@@ -699,4 +703,20 @@ static void drawExplosions()
     SDL_SetRenderDrawBlendMode(app.renderer, SDL_BLENDMODE_NONE);
 
 
+}
+
+//Displayes the text for score and highscore
+static void drawHUD()
+{
+    //drawText supports variable arguments
+    drawText(10,10,255,255,255,"SCORE: %03d",stage.score);
+
+    if(stage.score>0 && stage.score==app.highScore) //passed the hightscore
+    {
+        drawText(960,10,0,255,0,"HIGHSCORE: %03d",app.highScore);
+    }
+    else
+    {
+        drawText(960,10,255,255,255,"HIGHSCORE: %03d",app.highScore);
+    }
 }

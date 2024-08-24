@@ -17,6 +17,7 @@ typedef struct
     int keys[MAX_KEYBOARD_KEYS];
     int fire;
     Caller caller;
+    int highScore;
 } App;
 
 typedef struct Entity
@@ -61,6 +62,7 @@ typedef struct
     Entity bulletHead,*bulletTail;
     Debris debrisHead,*debrisTail;
     Explosion explosionHead,*explosionTail;
+    int score;
 } Stage;
 
 

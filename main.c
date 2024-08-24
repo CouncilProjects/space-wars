@@ -26,6 +26,7 @@ int main(void)
 
     initSDL();
     initSounds();    
+    initFont();
     atexit(cleanup);
 
     initStage();

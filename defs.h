@@ -29,4 +29,10 @@ enum
     SND_ALIEN_DIE,
     SND_MAX
 };
+
+#define MAX_LINE_LENGTH 1024
+
+
+#define GLYPH_WIDTH 18
+#define GLYPH_HEIGHT 28
 #endif
