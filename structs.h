@@ -60,6 +60,7 @@ typedef struct
     //Holds information about the fighters,bullets,explosions,debris. 
     Entity fighterHead, *fighterTail;
     Entity bulletHead,*bulletTail;
+    Entity pointHead,*pointTail;
     Debris debrisHead,*debrisTail;
     Explosion explosionHead,*explosionTail;
     int score;

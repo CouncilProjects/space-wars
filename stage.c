@@ -3,7 +3,7 @@
 extern App app;
 extern Stage stage;
 extern Entity *player;
-SDL_Texture *bulletTexture,*enemyTexture,*alienBulletTexture,*playerTexture,*explosionTexture,*backgroundTexture;
+SDL_Texture *bulletTexture,*enemyTexture,*alienBulletTexture,*playerTexture,*explosionTexture,*backgroundTexture,*pointTexture;
 int enemySpawnTime,stageResetTimer;
 int backroundX;
 static Star stars[MAX_STARS];
@@ -31,14 +31,10 @@ void initStage(void)
     playerTexture = loadTexture("textures/player.png");
     explosionTexture=loadTexture("textures/explosion.png");
     backgroundTexture=loadTexture("textures/background.png");
-    if(backgroundTexture==NULL)
-    {
-        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,"error","Background texture did not load",NULL);
-    }
+    pointTexture=loadTexture("textures/points.png");
 
     app.highScore=0;
     resetStage();
-    enemySpawnTime=0;
 }
 
 //Resets the screen after player has been destroyed
@@ -77,6 +73,13 @@ static void resetStage(void)
         stage.explosionHead.next=ex->next;
         free(ex);
     }
+    while (stage.pointHead.next)
+    {
+        e=stage.pointHead.next;
+        stage.pointHead.next=e->next;
+        free(e);
+    }
+    
     
 
     memset(&stage, 0, sizeof(Stage));
@@ -85,6 +88,7 @@ static void resetStage(void)
     stage.bulletTail=&stage.bulletHead;
     stage.explosionTail=&stage.explosionHead;
     stage.debrisTail=&stage.debrisHead;
+    stage.pointTail=&stage.pointHead;
 
     //reset score
     stage.score=0;
@@ -97,7 +101,7 @@ static void resetStage(void)
 
     enemySpawnTime = 10;
 
-    stageResetTimer = FPS * 4;
+    stageResetTimer = FPS * 3;
 }
 
 //Sets the star array with rando star positions
@@ -116,10 +120,6 @@ static void initStarfield()
 static void initPlayer()
 {
     player=malloc(sizeof(Entity));
-    if(player==NULL)
-    {
-        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,"Error","Error making player",NULL);
-    }
 
     memset(player,0,sizeof(Entity));
     player->x=110;
@@ -139,6 +139,7 @@ static void logic(void)
 {
     handleBackround();
     moveStarfield();
+    handlePoints();
     controlPlayer();
     handleShips();
     enemiesShoot();
@@ -147,7 +148,7 @@ static void logic(void)
     clipPlayer();
     handleExplosion();
     handleDebris();
-    if (player == NULL)
+    if (player == NULL && --stageResetTimer==0)
     {
         SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION,"You died","Press OK to restart",NULL);
         resetStage();
@@ -175,6 +176,53 @@ static void  moveStarfield()
         {
             stars[i].x=SCREEN_WIDTH+stars[i].x;
         }
+    }
+}
+
+//moves the points and handles collection
+static void handlePoints()
+{
+    Entity *current,*prev;
+    prev=&stage.pointHead;
+    for(current=stage.pointHead.next;current!=NULL;current=current->next)
+    {
+        current->x+=current->dx;
+        current->y+=current->dy;
+
+        //if its outside of screen bring it back
+        if(current->x < 0 || current->x > SCREEN_WIDTH)
+        {
+            current->dx*=-1;
+            current->x+=current->dx;
+        }
+
+        if(current->y < 0 || current->y > SCREEN_HEIGHT)
+        {
+            current->dy*=-1;
+            current->y+=current->dy;
+        }
+
+        if(player!=NULL &&  collision(current->x,current->y,current->w,current->h,player->x,player->y,player->w,player->h))
+        {
+            current->health=0; //caught
+            stage.score++;
+            app.highScore=SDL_max(stage.score,app.highScore);
+            playSound(SND_POINT,ch_point);
+        }
+
+        if(current->health<=0)
+        {
+            if(current==stage.pointTail)
+            {
+                stage.pointTail=prev;
+            }
+
+            prev->next=current->next;
+            free(current);
+            current=prev;
+        }
+        prev=current;
+
     }
 }
 //Controls player actions based on user input
@@ -227,11 +275,6 @@ static void handleShips()
     Entity *current,*prev;
 
     prev=&stage.fighterHead;
-
-    if(player==NULL)
-    {
-        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,"The is no player in handle enemy","I have no idea why",NULL);
-    }
     //go through the list, move everyship and remove the non player ships that are off screen. 
     for(current=stage.fighterHead.next;current!=NULL;prev=current,current=current->next)
     {
@@ -251,30 +294,50 @@ static void handleShips()
             if (current == player)
             {
                 playSound(SND_PLAYER_DIE,ch_player);
+                addExplosion(current->x,current->y,4);
                 addDebris(current);
                 player = NULL;
             }
+            else if(current->x>0)//stuff to do when enemy dies on screen
+            {
+                playSound(SND_ALIEN_DIE,ch_any);
+                addPoint(current->x+(current->w/2),current->y+(current->h/2));
+                addExplosion(current->x,current->y,4);
+                addDebris(current);
+            }
+
 
             if (current == stage.fighterTail)
             {
                 stage.fighterTail = prev;
             }
 
-            //stuff to do when enemy is killed.
-            if (current != player && current->x >0)
-            {
-                playSound(SND_ALIEN_DIE,ch_any);
-                stage.score++;
-                app.highScore=SDL_max(stage.score,app.highScore);
-                addDebris(current);
-                addExplosion(current->x,current->y,3);
-            }
             prev->next = current->next;
             free(current);
             current = prev;
         }
 
     }
+}
+
+//Creates a point bubble
+static void addPoint(int x,int y)
+{
+    Entity *point=malloc(sizeof(Entity));
+    memset(point,0,sizeof(Entity));
+
+    point->x=x;
+    point->y=y;
+    point->dx=(rand()%5-rand()%5);
+    point->dy=(rand()%3-rand()%5);
+
+    point->health=FPS*10; //lives for 10 seconds
+
+    point->texture=pointTexture;
+    SDL_QueryTexture(pointTexture,NULL,NULL,&point->w,&point->h);
+
+    stage.pointTail->next=point;
+    stage.pointTail=point;
 }
 
 //Creates a series of explosions in different colors
@@ -347,10 +410,6 @@ static void addDebris(Entity *en)
             d->dy=-(5+rand()%12);
             d->life=FPS*2;
             d->texture=en->texture;
-            if(d->texture==NULL)
-            {
-                SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,"error","No debri texture",NULL);
-            }
 
             // what part of the texture it covers. 
             d->rect.x=x;
@@ -380,7 +439,7 @@ static void enemiesShoot(void)
 }
 
 //Enemy specific firing mechanism
-static void fireAlienBullet(Entity *e)
+static void fireAlienBullet(Entity *striker)
 {
     Entity *bullet;
 
@@ -394,14 +453,14 @@ static void fireAlienBullet(Entity *e)
     bullet->side = ALIEN_SIDE;
     SDL_QueryTexture(bullet->texture, NULL, NULL, &bullet->w, &bullet->h);
 
-    bullet->x +=e->x+ (e->w / 2) - (bullet->w / 2);
-    bullet->y +=e->y+ (e->h / 2) - (bullet->h / 2);
-    calcSlope(player->x + (player->w / 2), player->y + (player->h / 2), e->x, e->y, &bullet->dx, &bullet->dy);
+    bullet->x +=striker->x+ (striker->w / 2) - (bullet->w / 2);
+    bullet->y +=striker->y+ (striker->h / 2) - (bullet->h / 2);
+    calcSlope(player->x + (player->w / 2), player->y + (player->h / 2), striker->x+(striker->w/2), striker->y+(striker->h/2), &bullet->dx, &bullet->dy);
 
-    bullet->dx *= ALIEN_BULLET_SPEED+e->dx;
+    bullet->dx *= ALIEN_BULLET_SPEED;
     bullet->dy *= ALIEN_BULLET_SPEED;
 
-    e->reload = (rand() % FPS * 2);
+    striker->reload = (rand() % FPS * 2);
 }
 
 //Player specific firing mechanism
@@ -412,10 +471,6 @@ static void fire(void)
 
     bullet=malloc(sizeof(Entity));
     memset(bullet,0,sizeof(Entity));
-    if(bullet==NULL)
-    {
-        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,"Error","Error making bullet (bad malloc)",NULL);
-    }
 
     //insert new bullet in the list 
     stage.bulletTail->next=bullet;
@@ -447,6 +502,7 @@ static void handleBullets(void)
     for(current=stage.bulletHead.next;current!=NULL;prev=current,current=current->next)
     {
         current->x+=current->dx;
+        current->y+=current->dy;
         
         if(bulletHit(current) || current->x < -current->w || current->y < -current->h || current->x > SCREEN_WIDTH || current->y > SCREEN_HEIGHT)
         {
@@ -613,6 +669,7 @@ static void draw(void)
 {
     drawBackround();
     drawStarfield();
+    drawPoints();
 
     drawShips();
     drawBullets();
@@ -649,6 +706,16 @@ static void drawStarfield(void)
         SDL_SetRenderDrawColor(app.renderer,c,c,c,255);
 
         SDL_RenderDrawLine(app.renderer,stars[i].x,stars[i].y,stars[i].x+3,stars[i].y);
+    }
+}
+
+//draws every point in the list
+static void drawPoints()
+{
+    Entity *current;
+    for(current=stage.pointHead.next;current!=NULL;current=current->next)
+    {
+        drawTexture(current->texture,current->x,current->y);
     }
 }
 

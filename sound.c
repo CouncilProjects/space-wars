@@ -21,6 +21,7 @@ void loadSounds()
     sound[SND_ALIEN_FIRE]=Mix_LoadWAV("sound/alienFire.ogg");
     sound[SND_PLAYER_DIE] = Mix_LoadWAV("sound/explosion.ogg");
     sound[SND_ALIEN_DIE]=Mix_LoadWAV("sound/explosionAlien.ogg");
+    sound[SND_POINT]=Mix_LoadWAV("sound/point.ogg");
 }
 
 //Load the music in memory to play later

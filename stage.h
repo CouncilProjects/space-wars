@@ -20,6 +20,9 @@ static void initPlayer(void);
 //Calls the series of functions that control the flow of the game [controlPlayer,handleShips,enemiesShoot,handleBullets,spawnEnemies,clipPlayer,resetStage]
 static void logic(void);
 
+//moves the points and handles collection
+static void handlePoints();
+
 //Controls player actions based on user input
 static void controlPlayer(void);
 
@@ -56,6 +59,9 @@ static void  handleBackround();
 //moves every star in the static array, warping them when they reach the end of the screen.
 static void  moveStarfield();
 
+//Creates a point bubble
+static void addPoint(int x,int y);
+
 //Creates a series of explosions in different colors
 static void addExplosion(int x,int y,int num);
 
@@ -79,6 +85,9 @@ static void drawBackround(void);
 
 //set the color of the stars and draw them as lines
 static void drawStarfield(void);
+
+//draws every point in the list
+static void drawPoints();
 
 //Draws every ship on screen with updated coordinates
 static void drawShips(void);
