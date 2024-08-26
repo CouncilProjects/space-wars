@@ -19,10 +19,42 @@ void presentScene()
 SDL_Texture *loadTexture(char* fileName)
 {
     SDL_Texture *texture;
-    texture=IMG_LoadTexture(app.renderer,fileName);
+    texture=getTexture(fileName);
+    if(texture==NULL)
+    {
+        texture=IMG_LoadTexture(app.renderer,fileName);
+        addToCache(fileName,texture);
+    }
+    
     return texture;
 }
 
+static SDL_Texture* getTexture(const char* filename)
+{
+    Texture *t;
+    for(t=app.textureHead.next;t!=NULL;t=t->next)
+    {
+        if(strcmp(t->name,filename)==0)
+        {
+            return t->texture;
+        }
+    }
+
+    return NULL;
+}
+
+static void addToCache(char* filename,SDL_Texture* texture)
+{
+    Texture *tex=malloc(sizeof(Texture));
+    memset(tex,0,sizeof(Texture));
+
+    tex->texture=texture;
+    STRNCPY(tex->name,filename,MAX_NAME_LENGTH);
+
+    app.textureTail->next=tex;
+    app.textureTail=tex;
+
+}
 //Draw a texture at the coordinates x,y
 void drawTexture(SDL_Texture *texture,int x,int y)
 {

@@ -5,14 +5,14 @@
 #include"utility.h"
 #include"sound.h"
 #include"text.h"
+#include"highscore.h"
+#include"background.h"
+
 //Initializes basic resources [fighter & bullet lists, player,textures,app function callers]
 void initStage(void);
 
 //Resets the screen after player has been destroyed
-static void resetStage(void);
-
-//Sets the star array with rando star positions
-static void initStarfield(void);
+void resetStage(void);
 
 //Initializes a player ship. 
 static void initPlayer(void);
@@ -50,15 +50,6 @@ static void spawnEnemies(void);
 //Makes the player unable to go beyond the screen
 static void clipPlayer(void);
 
-//Sets the star array with rando star positions
-static void initStarfield();
-
-//makes sure the backround is always in place.
-static void  handleBackround();
-
-//moves every star in the static array, warping them when they reach the end of the screen.
-static void  moveStarfield();
-
 //Creates a point bubble
 static void addPoint(int x,int y);
 
@@ -79,12 +70,6 @@ static void courseCorrection(Entity *enemy);
 
 //Calls the series of functions that control the graphics of the game [drawShips,drawBullets]
 static void draw(void);
-
-//Sets the background to the size of the screen
-static void drawBackround(void);
-
-//set the color of the stars and draw them as lines
-static void drawStarfield(void);
 
 //draws every point in the list
 static void drawPoints();

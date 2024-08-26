@@ -37,4 +37,12 @@ enum
 
 #define GLYPH_WIDTH 18
 #define GLYPH_HEIGHT 28
+
+#define NUM_HIGHSCORE 8
+
+#define STRNCPY(dest, src, n) strncpy(dest, src, n); dest[n - 1] = '\0'
+
+#define MAX_NAME_LENGTH 32
+
+
 #endif

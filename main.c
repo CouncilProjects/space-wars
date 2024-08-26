@@ -24,12 +24,9 @@ int main(void)
     memset(&app,0,sizeof(App));
     
 
-    initSDL();
-    initSounds();    
-    initFont();
+    initGame();
     atexit(cleanup);
 
-    initStage();
 
     then=SDL_GetTicks64();
     remainder=0;
@@ -67,6 +64,7 @@ void cleanup()
     }
 
     IMG_Quit();
+    Mix_Quit();
     SDL_Quit();
 
 }

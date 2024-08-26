@@ -3,17 +3,15 @@
 extern App app;
 extern Stage stage;
 extern Entity *player;
-SDL_Texture *bulletTexture,*enemyTexture,*alienBulletTexture,*playerTexture,*explosionTexture,*backgroundTexture,*pointTexture;
+SDL_Texture *bulletTexture,*enemyTexture,*alienBulletTexture,*playerTexture,*explosionTexture,*pointTexture;
 int enemySpawnTime,stageResetTimer;
-int backroundX;
-static Star stars[MAX_STARS];
 
 //Initializes basic resources [fighter & bullet lists, player,textures,app function callers]
 void initStage(void)
 {
     //assign the functions to the apps function caller
-    app.caller.logic=logic;
-    app.caller.draw=draw;
+    //app.caller.logic=logic;
+    //app.caller.draw=draw;
 
     //set the memory of stage to zero
     memset(&stage,0,sizeof(stage));
@@ -22,6 +20,7 @@ void initStage(void)
     stage.bulletTail=&stage.bulletHead;
     stage.explosionTail=&stage.explosionHead;
     stage.debrisTail=&stage.debrisHead;
+    stage.pointTail=&stage.pointHead;
 
 
     //cache the textures for repeated use later.
@@ -30,19 +29,21 @@ void initStage(void)
     alienBulletTexture = loadTexture("textures/alienBullet.png");
     playerTexture = loadTexture("textures/player.png");
     explosionTexture=loadTexture("textures/explosion.png");
-    backgroundTexture=loadTexture("textures/background.png");
     pointTexture=loadTexture("textures/points.png");
-
-    app.highScore=0;
+    app.highScore=0;;
     resetStage();
 }
 
 //Resets the screen after player has been destroyed
-static void resetStage(void)
+void resetStage(void)
 {
     Entity *e;
     Explosion *ex;
     Debris *de;
+
+    //assign the functions to the apps function caller
+    app.caller.logic=logic;
+    app.caller.draw=draw;
 
     //empty the fighter list
     while (stage.fighterHead.next)
@@ -92,8 +93,6 @@ static void resetStage(void)
 
     //reset score
     stage.score=0;
-    //make starfield
-    initStarfield();
 
     //make new player
     initPlayer();
@@ -102,18 +101,6 @@ static void resetStage(void)
     enemySpawnTime = 10;
 
     stageResetTimer = FPS * 3;
-}
-
-//Sets the star array with rando star positions
-static void initStarfield()
-{
-    int i;
-    for(i=0;i<MAX_STARS;i++)
-    {
-        stars[i].x=rand()%SCREEN_WIDTH;
-        stars[i].y=rand()%SCREEN_HEIGHT;
-        stars[i].speed=1+(rand()%8);
-    }
 }
 
 //Initializes a player ship. 
@@ -150,34 +137,13 @@ static void logic(void)
     handleDebris();
     if (player == NULL && --stageResetTimer==0)
     {
-        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION,"You died","Press OK to restart",NULL);
-        resetStage();
+        app.highScore=SDL_max(stage.score,app.highScore);
+        addHighScore(stage.score);
+        initHighScores();
     }
 }
 
-//makes sure the backround is always in place. 
-static void  handleBackround()
-{
-    if(--backroundX < -SCREEN_WIDTH)
-    {
-        backroundX=0;
-    }
-}
 
-//moves every star in the static array, warping them when they reach the end of the screen.
-static void  moveStarfield()
-{
-    int i;
-    for(i=0;i<MAX_STARS;i++)
-    {
-        stars[i].x-=stars[i].speed;
-
-        if(stars[i].x < 0)
-        {
-            stars[i].x=SCREEN_WIDTH+stars[i].x;
-        }
-    }
-}
 
 //moves the points and handles collection
 static void handlePoints()
@@ -188,7 +154,6 @@ static void handlePoints()
     {
         current->x+=current->dx;
         current->y+=current->dy;
-
         //if its outside of screen bring it back
         if(current->x < 0 || current->x > SCREEN_WIDTH)
         {
@@ -210,7 +175,7 @@ static void handlePoints()
             playSound(SND_POINT,ch_point);
         }
 
-        if(current->health<=0)
+        if(--current->health<=0)
         {
             if(current==stage.pointTail)
             {
@@ -679,36 +644,6 @@ static void draw(void)
     drawHUD();
 }
 
-//Sets the background to the size of the screen
-static void drawBackround()
-{
-    SDL_Rect rect;
-    int x;
-    for(x=0;x<SCREEN_WIDTH;x+=SCREEN_WIDTH)
-    {
-        rect.x=x;
-        rect.y=0;
-        rect.h=SCREEN_HEIGHT;
-        rect.w=SCREEN_WIDTH;
-
-        SDL_RenderCopy(app.renderer,backgroundTexture,NULL,&rect);
-    }
-}
-
-//set the color of the stars and draw them as lines
-static void drawStarfield(void)
-{
-    int i,c;
-    for(i=0;i<MAX_STARS;i++)
-    {
-        c=32*stars[i].speed;
-
-        SDL_SetRenderDrawColor(app.renderer,c,c,c,255);
-
-        SDL_RenderDrawLine(app.renderer,stars[i].x,stars[i].y,stars[i].x+3,stars[i].y);
-    }
-}
-
 //draws every point in the list
 static void drawPoints()
 {
@@ -778,12 +713,12 @@ static void drawHUD()
     //drawText supports variable arguments
     drawText(10,10,255,255,255,"SCORE: %03d",stage.score);
 
-    if(stage.score>0 && stage.score==app.highScore) //passed the hightscore
+    if(stage.score>0 && stage.score>=app.highScore) //passed the hightscore
     {
-        drawText(960,10,0,255,0,"HIGHSCORE: %03d",app.highScore);
+        drawText(860,10,0,255,0,"PERSONAL HIGHSCORE: %03d",app.highScore);
     }
     else
     {
-        drawText(960,10,255,255,255,"HIGHSCORE: %03d",app.highScore);
+        drawText(860,10,255,255,255,"PERSONAL HIGHSCORE: %03d",app.highScore);
     }
 }

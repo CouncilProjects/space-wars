@@ -10,8 +10,6 @@ void initSounds()
     music=NULL;
 
     loadSounds();
-    loadMusic("sound/backgroundMusic.ogg");
-    playMusic(-1);
 }
 
 void loadSounds()

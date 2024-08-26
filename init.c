@@ -1,20 +1,15 @@
 #include"init.h"
-#include "SDL_image.h"
-#include"SDL_mixer.h"
-extern App app;// i tell it there is indeed an app somewhere. 
 
 //Sets up the SDL enviroment
 void initSDL()
 {
-
-    
     //use hardware for accelaration
     int rendererFlags=SDL_RENDERER_ACCELERATED;
 
     //set the sdl video subsystem
     if(SDL_Init(SDL_INIT_VIDEO)<0)
     {
-        printf("error in init error %s\n",SDL_GetError());
+       SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION,"Error","Could not open video initilizer",NULL);
         exit(1);
     }
 
@@ -22,7 +17,7 @@ void initSDL()
 
     if(!app.window)
     {
-        printf("Failed to open window %s\n",SDL_GetError());
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION,"Error","Could not open window",NULL);
         exit(1);
     }
 
@@ -32,14 +27,15 @@ void initSDL()
     app.renderer=SDL_CreateRenderer(app.window,-1,rendererFlags);
     if(!app.renderer)
     {
-        printf("Failed to create renderer\n");
+       SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION,"Error","Could not open renderer",NULL);
         exit(1);
     }
     
     // Initilize image, make it able to load png and jpg
     if(!IMG_Init(IMG_INIT_PNG | IMG_INIT_JPG))
     {
-        printf("Failed to initialize image loader, %s\n",SDL_GetError());
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION,"Error","Could not open image initializer",NULL);
+        exit(1);
     }
     
     if(Mix_OpenAudio(44100,MIX_DEFAULT_FORMAT,2,1024)==-1)
@@ -50,4 +46,23 @@ void initSDL()
 
     //how many different sounds can play
     Mix_AllocateChannels(MAX_SND_CHANNELS);
+}
+
+void initGame()
+{
+    app.textureTail=&app.textureHead;
+    initSDL();
+    initSounds();    
+    initFont();
+
+    initBackground();
+    //make starfield
+    initStarfield();
+    initStage();
+
+    initHighScoreTable();
+    initHighScores();
+
+    loadMusic("sound/backgroundMusic.ogg");
+    playMusic(-1);
 }

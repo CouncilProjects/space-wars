@@ -9,6 +9,13 @@ typedef struct
     void (*draw)(void);
 } Caller;
 
+typedef struct Texture
+{
+    char name[MAX_NAME_LENGTH];
+    SDL_Texture *texture;
+    struct Texture *next;
+} Texture;
+
 typedef struct 
 {
     SDL_Renderer *renderer;
@@ -18,6 +25,7 @@ typedef struct
     int fire;
     Caller caller;
     int highScore;
+    Texture textureHead,*textureTail;
 } App;
 
 typedef struct Entity
@@ -72,4 +80,15 @@ typedef struct
 {
     int x,y,speed;
 } Star;
+
+typedef struct 
+{
+    int recent,score;
+} Highscore;
+
+typedef struct
+{
+    Highscore highscoresArray[NUM_HIGHSCORE];
+} Highscores;
+
 #endif // STRUCT_H
