@@ -8,6 +8,9 @@ void doInput()
 {
     SDL_Event event;
 
+    //clear the name buffer
+    memset(app.playerInputText,'\0',MAX_LINE_LENGTH);
+
     //take events as long as there are
     while(SDL_PollEvent(&event))
     {
@@ -15,6 +18,11 @@ void doInput()
         {
         case SDL_QUIT:
             exit(0);
+            break;
+        //event.text.text has a character buffer with characters typed since last call of the function. 
+        //NOTE: input is controlled by SDL_StartTextInput and SDL_StopTextInput, its on by default so no change/configuration required
+        case SDL_TEXTINPUT:
+            STRNCPY(app.playerInputText,event.text.text,MAX_LINE_LENGTH);
             break;
         
         case SDL_KEYDOWN:

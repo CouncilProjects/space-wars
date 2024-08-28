@@ -6,7 +6,8 @@
 #include"background.h"
 extern App app;
 static Highscores highscores;
-
+static Highscore *newHighScore;
+static int cursorBlink;
 
 //sets different high-score values
 void initHighScoreTable();
@@ -17,8 +18,15 @@ void initHighScores();
 //Calls a series of functions needed for highscore logic [handleBackround(),moveStarfield(),initStage()]
 static void hsLogic();
 
+//Take the name the user types (its stored in app.playerInputText by the do input() function in input.c)
+//turn it to uppercase letters (only uppercase support)
+static void handleNameInput();
+
 //Calls a series of functions needed for highscore logic [drawBackround(),drawStarfield(),drawHighscores()]
 static void hsDraw();
+
+//Shows basic name entering UI, displays some text and the typed name so far, also a green rectangle that acts as a cursor
+static void drawNameInputHUD();
 
 //Creates a rectangle and writes (with the drawText function of text.h) every score in the highscore array.
 static void drawHighscores();

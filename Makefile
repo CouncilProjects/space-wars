@@ -4,7 +4,7 @@
 CC = gcc
 
 # Compiler flags (using sdl2-config for SDL2 flags)
-CFLAGS = $(shell sdl2-config --cflags)
+CFLAGS =  $(shell sdl2-config --cflags)
 LDFLAGS = $(shell sdl2-config --libs) -lSDL2_image -lSDL2_mixer
 
 # Target executable

@@ -9,7 +9,11 @@ void initHighScoreTable()
     for(i=0;i<NUM_HIGHSCORE;i++)
     {
         highscores.highscoresArray[i].score=NUM_HIGHSCORE-i;
+        STRNCPY(highscores.highscoresArray[i].name,"ANNONYMOUS",MAX_SCORE_NAME_LENGTH);
     }
+
+    /*newHighScore=null;
+    cursorBlink=0;*/
 }
 
 void initHighScores()
@@ -18,7 +22,7 @@ void initHighScores()
     app.caller.draw=hsDraw;
 
     //clear the input so as to not immidiately change the screen. 
-    memset(app.keys,0,sizeof(int)*MAX_KEYBOARD_KEYS);
+    memset(app.keys,0,MAX_KEYBOARD_KEYS);
 }
 
 static void hsLogic()
@@ -26,10 +30,62 @@ static void hsLogic()
     handleBackround();
     moveStarfield();
 
-    if(app.keys[SDL_SCANCODE_SPACE])
+    //if newHighScore is not NULL (so its assigned) it means a player did a high score and we need to get his name
+    if(newHighScore!=NULL)
     {
-        resetStage();
+        handleNameInput();
     }
+    else
+    {
+        if(app.keys[SDL_SCANCODE_SPACE])
+        {
+            resetStage();
+        }
+    }
+
+    //this practiically resets the cursorBlink every second 
+    if(++cursorBlink>=FPS)
+    {
+        cursorBlink=0;
+    }
+}
+
+//Take the name the user types (its stored in app.playerInputText by the do input() function in input.c)
+//turn it to uppercase letters (only uppercase support)
+static void handleNameInput()
+{
+    int i,currentLen;
+    char c;
+
+    currentLen=strlen(newHighScore->name);
+
+    for(i=0;i<strlen(app.playerInputText);i++)
+    {
+        c=toupper(app.playerInputText[i]);
+        if(currentLen<MAX_SCORE_NAME_LENGTH&& (c>=' ' && c<='Z'))
+        {
+            newHighScore->name[currentLen++]=c;
+        }
+    }
+
+    
+
+    if(currentLen>0 && app.keys[SDL_SCANCODE_BACKSPACE])
+    {
+        newHighScore->name[--currentLen]='\0';
+        app.keys[SDL_SCANCODE_BACKSPACE]=0;
+    }
+
+    if(app.keys[SDL_SCANCODE_RETURN])
+    {
+        if(strlen(newHighScore->name)==0)//empty name
+        {
+            STRNCPY(newHighScore->name, "ANONYMOUS", MAX_SCORE_NAME_LENGTH);
+        }
+
+         newHighScore = NULL;
+    }
+    
 }
 
 static void hsDraw()
@@ -37,15 +93,45 @@ static void hsDraw()
     drawBackround();
     drawStarfield();
 
-    drawHighscores();
+    if(newHighScore!=NULL)
+    {
+        drawNameInputHUD();
+    }
+    else
+    {
+        drawHighscores();
+    }
 }
 
+//Shows basic name entering UI, displays some text and the typed name so far, also a green rectangle that acts as a cursor
+static void drawNameInputHUD()
+{
+    SDL_Rect rect;
+
+    drawText(SCREEN_WIDTH/2,70,text_center,0,255,205,"CONGRATULATIONS, YOU'VE GAINED A HIGHSCORE!");
+    drawText(SCREEN_WIDTH/2,150,text_center,0,255,205,"ENTER YOUR NAME");
+    drawText(SCREEN_WIDTH / 2, 250,text_center, 128, 255, 128,"%s", newHighScore->name);
+
+    if(cursorBlink<=FPS/2)//every half a second practically it will make it appear
+    {
+        rect.y=250;
+        rect.w=GLYPH_WIDTH;
+        rect.h=GLYPH_HEIGHT;
+        rect.x=((SCREEN_WIDTH/2)+(strlen(newHighScore->name)*GLYPH_WIDTH)/2)+5;
+
+        SDL_SetRenderDrawColor(app.renderer,0,255,0,255);
+        SDL_RenderFillRect(app.renderer,&rect);
+    }
+
+    drawText(SCREEN_WIDTH / 2, 625,text_center, 255, 255, 255, "PRESS RETURN WHEN FINISHED");
+
+}
 //formats the highscore table. 
 static void drawHighscores()
 {
     int i,x=425,y;
     y=70;
-    drawText(x,70,255,255,255,"HIGHSCORE");
+    drawText(x,70,text_left,255,255,255,"HIGHSCORE");
 
     SDL_Rect rect;
     rect.x=x-30;
@@ -56,21 +142,24 @@ static void drawHighscores()
     SDL_RenderDrawRect(app.renderer,&rect);
     SDL_SetRenderDrawColor(app.renderer,0,0,0,255);
     y+=50;
+
+
+
     for(i=0;i<NUM_HIGHSCORE;i++)
     {
+        int r=255,g=255,b=255;
+
         if(highscores.highscoresArray[i].recent==1)
         {
-            drawText(x,y,255,255,0,"#%d ............. %03d",(i+1),highscores.highscoresArray[i].score);
+            b=0;
         }
-        else
-        {
-            drawText(x,y,255,255,255,"#%d ............. %03d",(i+1),highscores.highscoresArray[i].score);
-        }
+
+        drawText(SCREEN_WIDTH/2,y,text_center,r,g,b,"#%d %-15s %03d",(i+1),highscores.highscoresArray[i].name,highscores.highscoresArray[i].score);
 
         y += 50;
     }
 
-    drawText(x,600,255,255,255,"PRESS SPACE TO PLAY");
+    drawText(x,600,text_left,255,255,255,"PRESS SPACE TO PLAY");
 }
 
 //We will make a new array with one extra score, the new one. 
@@ -95,11 +184,16 @@ void addHighScore(int score)
     //due to myCompare the sort will happen in descending order (from biggest to lowest)
     qsort(newTable,NUM_HIGHSCORE+1,sizeof(Highscore),myCompare);
    
-    int y=300;
 
+    newHighScore=NULL;
     for(i=0;i<NUM_HIGHSCORE;i++)
     {
         highscores.highscoresArray[i]=newTable[i];
+        if(highscores.highscoresArray[i].recent==1)
+        {
+            newHighScore=&highscores.highscoresArray[i];
+            memset(newHighScore->name,'\0',sizeof(char)*16); //we also put null terminators here else it will be uninitialised at the start. 
+        }
     }
 }
 

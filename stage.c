@@ -711,14 +711,14 @@ static void drawExplosions()
 static void drawHUD()
 {
     //drawText supports variable arguments
-    drawText(10,10,255,255,255,"SCORE: %03d",stage.score);
+    drawText(10,10,text_left,255,255,255,"SCORE: %03d",stage.score);
 
     if(stage.score>0 && stage.score>=app.highScore) //passed the hightscore
     {
-        drawText(860,10,0,255,0,"PERSONAL HIGHSCORE: %03d",app.highScore);
+        drawText(860,10,text_left,0,255,0,"PERSONAL HIGHSCORE: %03d",app.highScore);
     }
     else
     {
-        drawText(860,10,255,255,255,"PERSONAL HIGHSCORE: %03d",app.highScore);
+        drawText(860,10,text_left,255,255,255,"PERSONAL HIGHSCORE: %03d",app.highScore);
     }
 }

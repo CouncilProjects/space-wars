@@ -8,7 +8,7 @@ void initFont()
     fontTexture=loadTexture("textures/font.png");
 }
 
-void drawText(int x,int y,int r,int g,int b,char *format,...)
+void drawText(int x,int y,int align,int r,int g,int b,char *format,...)
 {
     int i,len,character;
     SDL_Rect rect;
@@ -27,6 +27,17 @@ void drawText(int x,int y,int r,int g,int b,char *format,...)
     va_end(args);
 
     len=strlen(textBuffer);
+
+    switch (align)//works due to the fixed character width
+    {
+        case text_center:
+            x-=(len*GLYPH_WIDTH)/2;
+            break;
+        
+        case text_right:
+            x-=(len*GLYPH_WIDTH);
+            break;
+    }
 
     rect.w=GLYPH_WIDTH;
     rect.h=GLYPH_HEIGHT;

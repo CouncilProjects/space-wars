@@ -6,7 +6,7 @@
 #include"defs.h"
 
 void initFont();
-void drawText(int x,int y,int r,int g,int b,char *format,...);
+void drawText(int x,int y,int align,int r,int g,int b,char *format,...);
 
 
 #endif

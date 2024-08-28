@@ -26,6 +26,7 @@ typedef struct
     Caller caller;
     int highScore;
     Texture textureHead,*textureTail;
+    char playerInputText[MAX_LINE_LENGTH];
 } App;
 
 typedef struct Entity
@@ -84,6 +85,7 @@ typedef struct
 typedef struct 
 {
     int recent,score;
+    char name[MAX_SCORE_NAME_LENGTH];
 } Highscore;
 
 typedef struct
@@ -91,4 +93,4 @@ typedef struct
     Highscore highscoresArray[NUM_HIGHSCORE];
 } Highscores;
 
-#endif // STRUCT_H
+#endif
