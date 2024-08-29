@@ -50,6 +50,7 @@ void initSDL()
 
 void initGame()
 {
+    SDL_SetRelativeMouseMode(SDL_DISABLE);
     app.textureTail=&app.textureHead;
     initSDL();
     initSounds();    

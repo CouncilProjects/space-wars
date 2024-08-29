@@ -9,9 +9,6 @@ int enemySpawnTime,stageResetTimer;
 //Initializes basic resources [fighter & bullet lists, player,textures,app function callers]
 void initStage(void)
 {
-    //assign the functions to the apps function caller
-    //app.caller.logic=logic;
-    //app.caller.draw=draw;
 
     //set the memory of stage to zero
     memset(&stage,0,sizeof(stage));
@@ -94,6 +91,7 @@ void resetStage(void)
     //reset score
     stage.score=0;
 
+    app.highScore=getHighscore();
     //make new player
     initPlayer();
 
@@ -111,7 +109,7 @@ static void initPlayer()
     memset(player,0,sizeof(Entity));
     player->x=110;
     player->y=110;
-    player->health=1;
+    player->health=10;
     player->texture=playerTexture;
     SDL_QueryTexture(player->texture,NULL,NULL,&player->w,&player->h);
     player->side=PLAYER_SIDE;
@@ -137,7 +135,6 @@ static void logic(void)
     handleDebris();
     if (player == NULL && --stageResetTimer==0)
     {
-        app.highScore=SDL_max(stage.score,app.highScore);
         addHighScore(stage.score);
         initHighScores();
     }
@@ -155,13 +152,13 @@ static void handlePoints()
         current->x+=current->dx;
         current->y+=current->dy;
         //if its outside of screen bring it back
-        if(current->x < 0 || current->x > SCREEN_WIDTH)
+        if(current->x < 0 || current->x+current->w > SCREEN_WIDTH)
         {
             current->dx*=-1;
             current->x+=current->dx;
         }
 
-        if(current->y < 0 || current->y > SCREEN_HEIGHT)
+        if(current->y < 0 || current->y+current->h > SCREEN_HEIGHT)
         {
             current->dy*=-1;
             current->y+=current->dy;
@@ -259,7 +256,7 @@ static void handleShips()
             if (current == player)
             {
                 playSound(SND_PLAYER_DIE,ch_player);
-                addExplosion(current->x,current->y,4);
+                addExplosion(current->x,current->y,10);
                 addDebris(current);
                 player = NULL;
             }
@@ -497,7 +494,8 @@ static int bulletHit(Entity *bullet)
     {
         if(bullet->side!=current->side && bullet->health==1 && collision(bullet->x,bullet->y,bullet->w,bullet->h,current->x,current->y,current->w,current->h))
         {
-            bullet->health=current->health=0;
+            bullet->health=0;
+            current->health-=1;
             return 1;
         }
     }
@@ -526,7 +524,8 @@ static void spawnEnemies()
     enemy->y=rand()%SCREEN_HEIGHT;
     //negative dx so it move to the left of the screen. 
     enemy->dx=-(2+(rand()%5));
-    enemy->dy=0;
+    enemy->dy = -100 + (rand() % 200); //dy can now either be -1 or +1
+    enemy->dy /= 100;
     enemy->health=1;
 
     enemy->texture=enemyTexture;
@@ -650,7 +649,10 @@ static void drawPoints()
     Entity *current;
     for(current=stage.pointHead.next;current!=NULL;current=current->next)
     {
-        drawTexture(current->texture,current->x,current->y);
+        if(current->health>=(3*FPS) || current->health % 12 < 6) // if it has more than 3 seconds of life alway draw it, if not make it blink
+        {
+            drawTexture(current->texture,current->x,current->y);
+        }
     }
 }
 
@@ -712,13 +714,22 @@ static void drawHUD()
 {
     //drawText supports variable arguments
     drawText(10,10,text_left,255,255,255,"SCORE: %03d",stage.score);
-
-    if(stage.score>0 && stage.score>=app.highScore) //passed the hightscore
+    if(player!=NULL)
     {
-        drawText(860,10,text_left,0,255,0,"PERSONAL HIGHSCORE: %03d",app.highScore);
+        drawText(10,39,text_left,255,player->health*20,player->health*20,"HP:%d",player->health);
     }
     else
     {
-        drawText(860,10,text_left,255,255,255,"PERSONAL HIGHSCORE: %03d",app.highScore);
+        drawText(10,39,text_left,255,0,0,"WARSHIP DESTROYED");
+    }
+    
+
+    if(stage.score>0 && stage.score>=app.highScore) //passed the hightscore
+    {
+        drawText(1000,10,text_left,0,255,0,"HIGHSCORE: %03d",app.highScore);
+    }
+    else
+    {
+        drawText(1000,10,text_left,255,255,255,"HIGHSCORE: %03d",app.highScore);
     }
 }

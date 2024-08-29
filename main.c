@@ -7,7 +7,7 @@
 #include"init.h"
 #include"input.h"
 #include"stage.h"
-
+#include"title.h"
 void cleanup();
 void capFrames();
 
@@ -26,6 +26,7 @@ int main(void)
 
     initGame();
     atexit(cleanup);
+    initTilte();
 
 
     then=SDL_GetTicks64();

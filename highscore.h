@@ -9,6 +9,9 @@ static Highscores highscores;
 static Highscore *newHighScore;
 static int cursorBlink;
 
+//returns the current highest score on the table
+int getHighscore();
+
 //sets different high-score values
 void initHighScoreTable();
 

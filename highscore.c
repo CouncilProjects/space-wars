@@ -1,5 +1,10 @@
 #include"highscore.h"
 
+//returns the current highest score on the table
+int getHighscore()
+{
+    return highscores.highscoresArray[0].score;
+}
 
 void initHighScoreTable()
 {
@@ -8,12 +13,12 @@ void initHighScoreTable()
     
     for(i=0;i<NUM_HIGHSCORE;i++)
     {
-        highscores.highscoresArray[i].score=NUM_HIGHSCORE-i;
+        highscores.highscoresArray[i].score=(rand()%64)+3;
         STRNCPY(highscores.highscoresArray[i].name,"ANNONYMOUS",MAX_SCORE_NAME_LENGTH);
     }
-
-    /*newHighScore=null;
-    cursorBlink=0;*/
+    qsort(&highscores,NUM_HIGHSCORE,sizeof(Highscore),myCompare);
+    newHighScore=NULL;
+    cursorBlink=0;
 }
 
 void initHighScores()
@@ -25,6 +30,7 @@ void initHighScores()
     memset(app.keys,0,MAX_KEYBOARD_KEYS);
 }
 
+static int r=200,b=0;
 static void hsLogic()
 {
     handleBackround();
@@ -48,6 +54,17 @@ static void hsLogic()
     {
         cursorBlink=0;
     }
+
+     if(b>=250)
+    {
+        b=0;
+    }
+    if(r<=5)
+    {
+        r=200;
+    }
+    b+=1;
+    r-=1;
 }
 
 //Take the name the user types (its stored in app.playerInputText by the do input() function in input.c)
@@ -123,7 +140,7 @@ static void drawNameInputHUD()
         SDL_RenderFillRect(app.renderer,&rect);
     }
 
-    drawText(SCREEN_WIDTH / 2, 625,text_center, 255, 255, 255, "PRESS RETURN WHEN FINISHED");
+    drawText(SCREEN_WIDTH / 2, 625,text_center,r,SDL_abs(r-b),b, "PRESS ENTER WHEN FINISHED");
 
 }
 //formats the highscore table. 
@@ -159,7 +176,7 @@ static void drawHighscores()
         y += 50;
     }
 
-    drawText(x,600,text_left,255,255,255,"PRESS SPACE TO PLAY");
+    drawText(x+30,550,text_left,r,SDL_abs(r-b),b,"PRESS SPACE TO PLAY");
 }
 
 //We will make a new array with one extra score, the new one. 
