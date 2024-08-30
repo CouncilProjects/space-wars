@@ -3,7 +3,7 @@
 extern App app;
 extern Stage stage;
 extern Entity *player;
-SDL_Texture *bulletTexture,*enemyTexture,*alienBulletTexture,*playerTexture,*explosionTexture,*pointTexture;
+SDL_Texture *bulletTexture,*enemyTexture,*alienBulletTexture,*playerTexture,*explosionTexture,*pointTexture,*destructionTexture;
 int enemySpawnTime,stageResetTimer;
 
 //Initializes basic resources [fighter & bullet lists, player,textures,app function callers]
@@ -19,6 +19,7 @@ void initStage(void)
     stage.debrisTail=&stage.debrisHead;
     stage.pointTail=&stage.pointHead;
 
+    stage.destroyedTail=&stage.destroyedHead;
 
     //cache the textures for repeated use later.
     bulletTexture=loadTexture("textures/bullet.png");
@@ -27,6 +28,9 @@ void initStage(void)
     playerTexture = loadTexture("textures/player.png");
     explosionTexture=loadTexture("textures/explosion.png");
     pointTexture=loadTexture("textures/points.png");
+    
+    destructionTexture=loadTexture("textures/destroy.png");
+
     app.highScore=0;;
     resetStage();
 }
@@ -78,6 +82,12 @@ void resetStage(void)
         free(e);
     }
     
+    while (stage.destroyedHead.next)
+    {
+        e = stage.destroyedHead.next;
+        stage.destroyedHead.next = e->next;
+        free(e);
+    }
     
 
     memset(&stage, 0, sizeof(Stage));
@@ -87,6 +97,8 @@ void resetStage(void)
     stage.explosionTail=&stage.explosionHead;
     stage.debrisTail=&stage.debrisHead;
     stage.pointTail=&stage.pointHead;
+
+    stage.destroyedTail=&stage.destroyedHead;
 
     //reset score
     stage.score=0;
@@ -117,6 +129,7 @@ static void initPlayer()
     //place player ship in the list
     stage.fighterTail->next=player;
     stage.fighterTail=player;
+
 }
 
 //Calls the series of functions that control the flow of the game [controlPlayer,handleShips,enemiesShoot,handleBullets,spawnEnemies,clipPlayer,resetStage]
@@ -126,6 +139,7 @@ static void logic(void)
     moveStarfield();
     handlePoints();
     controlPlayer();
+    moveDestroyed();
     handleShips();
     enemiesShoot();
     handleBullets();
@@ -262,10 +276,8 @@ static void handleShips()
             }
             else if(current->x>0)//stuff to do when enemy dies on screen
             {
-                playSound(SND_ALIEN_DIE,ch_any);
                 addPoint(current->x+(current->w/2),current->y+(current->h/2));
-                addExplosion(current->x,current->y,4);
-                addDebris(current);
+                addDestroyed(current);
             }
 
 
@@ -348,6 +360,65 @@ static void addExplosion(int x,int y,int num)
         ex->a = rand() % FPS * 3;
     }
 }
+
+static void addDestroyed(Entity *en)
+{
+    Entity *newDestroyed=malloc(sizeof(Entity));
+    memset(newDestroyed,0,sizeof(Entity));
+
+    newDestroyed->x=en->x-41;
+    newDestroyed->y=en->y-50;
+    newDestroyed->dx=en->dx;
+    newDestroyed->dy=0;
+    newDestroyed->health=FPS*3; //it needs to go through 15 phases in 3 seconds 
+    newDestroyed->texture=destructionTexture;
+    SDL_QueryTexture(newDestroyed->texture,NULL,NULL,&newDestroyed->w,&newDestroyed->h);
+    newDestroyed->w/=15;
+
+    stage.destroyedTail->next=newDestroyed;
+    stage.destroyedTail=newDestroyed;
+}
+
+static void moveDestroyed()
+{
+    Entity *current,*prev;
+    prev=&stage.destroyedHead;
+    for(current=stage.destroyedHead.next;current!=NULL;prev=current,current=current->next)
+    {
+        current->x+=current->dx;
+        current->health--;
+
+        if(current->health==0)
+        {
+            if(current==stage.destroyedTail)
+            {
+                stage.destroyedTail=prev;
+            }
+            
+            playSound(SND_ALIEN_DIE,ch_any);
+            addExplosion(current->x+41,current->y+50,4);
+            addDebris(current);
+            prev->next=current->next;
+            free(current);
+            current=prev;
+        }
+    }
+}
+
+static void drawDestroyed()
+{
+    SDL_Rect rect;
+    Entity *current;
+    for(current=stage.destroyedHead.next;current!=NULL;current=current->next)
+    {
+        rect.y=0;
+        rect.h=current->h;
+        rect.w=current->w; //there are 15 phases in the destroy texture
+        rect.x=rect.w*(current->health/12); // since it "lives for 3 seconds" each phase lasts for 60*3/15 = 12 frames. 
+        drawPartialTexture(current->texture,&rect,current->x,current->y);
+    }
+}
+
 
 //cuts the texture to 4 parts adding each one as a "debri"
 static void addDebris(Entity *en)
@@ -634,7 +705,7 @@ static void draw(void)
     drawBackround();
     drawStarfield();
     drawPoints();
-
+    drawDestroyed();
     drawShips();
     drawBullets();
     drawExplosions();

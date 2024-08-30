@@ -56,6 +56,15 @@ static void addPoint(int x,int y);
 //Creates a series of explosions in different colors
 static void addExplosion(int x,int y,int num);
 
+//try to use the destuction animation
+static void addDestroyed(Entity *en);
+
+static void moveDestroyed();
+
+static void drawDestroyed();
+
+static int roundUP();
+
 //cuts the texture to 4 parts adding each one as a "debri"
 static void addDebris(Entity *en);
 

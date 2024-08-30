@@ -8,6 +8,7 @@
 #include"input.h"
 #include"stage.h"
 #include"title.h"
+#include"pauseScreen.h"
 void cleanup();
 void capFrames();
 
@@ -38,6 +39,8 @@ int main(void)
 
         doInput();
 
+        pause();
+
         app.caller.logic();
         app.caller.draw();
 
@@ -64,6 +67,7 @@ void cleanup()
         SDL_DestroyWindow(app.window);
     }
 
+    saveTable();
     IMG_Quit();
     Mix_Quit();
     SDL_Quit();

@@ -21,6 +21,8 @@ void initHighScores();
 //Calls a series of functions needed for highscore logic [handleBackround(),moveStarfield(),initStage()]
 static void hsLogic();
 
+void saveTable();
+
 //Take the name the user types (its stored in app.playerInputText by the do input() function in input.c)
 //turn it to uppercase letters (only uppercase support)
 static void handleNameInput();

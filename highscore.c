@@ -8,6 +8,17 @@ int getHighscore()
 
 void initHighScoreTable()
 {
+    FILE *hsfile;
+    if(hsfile=fopen("data.dat","rb"))//if there is a file with the highscores get them from there
+    {
+        fread(&highscores,sizeof(Highscore),8,hsfile);
+        fclose(hsfile);
+        newHighScore=NULL;
+        cursorBlink=0;
+        return;
+    }
+
+    //if this point is reached there is not previous table so we randomize one.
     int i;
     memset(&highscores,0,sizeof(Highscores));
     
@@ -65,6 +76,17 @@ static void hsLogic()
     }
     b+=1;
     r-=1;
+}
+
+void saveTable()
+{
+    FILE *hsfile=fopen("data.dat","wb");
+    if(hsfile==NULL)
+    {
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION,"file","file not oppend",NULL);
+    }
+    fwrite(&highscores,sizeof(Highscore),8,hsfile);
+    fclose(hsfile);
 }
 
 //Take the name the user types (its stored in app.playerInputText by the do input() function in input.c)

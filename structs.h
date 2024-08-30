@@ -72,6 +72,7 @@ typedef struct
     Entity pointHead,*pointTail;
     Debris debrisHead,*debrisTail;
     Explosion explosionHead,*explosionTail;
+    Entity destroyedHead,*destroyedTail;
     int score;
 } Stage;
 

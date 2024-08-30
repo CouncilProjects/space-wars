@@ -1,7 +1,7 @@
 
 #include"title.h"
 
-static SDL_Texture *title;
+static SDL_Texture *title,*test;
 
 void initTilte()
 {
@@ -11,7 +11,6 @@ void initTilte()
     memset(&app.keys,0,sizeof(int)*MAX_KEYBOARD_KEYS);
 
     title=loadTexture("textures/title.png");
-
 }
 
 int b=0,r=200;
