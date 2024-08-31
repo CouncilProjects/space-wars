@@ -24,7 +24,7 @@ void initHighScoreTable()
     
     for(i=0;i<NUM_HIGHSCORE;i++)
     {
-        highscores.highscoresArray[i].score=(rand()%64)+3;
+        highscores.highscoresArray[i].score=(rand()%74)+13;
         STRNCPY(highscores.highscoresArray[i].name,"ANNONYMOUS",MAX_SCORE_NAME_LENGTH);
     }
     qsort(&highscores,NUM_HIGHSCORE,sizeof(Highscore),myCompare);

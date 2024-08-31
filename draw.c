@@ -81,3 +81,30 @@ void drawPartialTexture(SDL_Texture *texture,SDL_Rect *src,int x,int y)
     //now draw it but only the part of the texture that src allows
     SDL_RenderCopy(app.renderer,texture,src,&dest);
 }
+
+//Draws an entire texture and displays it in a modified size increased by addexW X addedH at coordinates x,y.
+void drawModifiedTexture(SDL_Texture *texture,int x,int y,int addedW,int addedH)
+{
+    SDL_Rect dest;
+    dest.x=x;
+    dest.y=y;
+    SDL_QueryTexture(texture,NULL,NULL,&dest.w,&dest.h);
+    dest.w+=addedW;
+    dest.h+=addedH;
+
+    SDL_RenderCopy(app.renderer,texture,NULL,&dest);
+}
+
+//Draws a part of a texture and displays it in a modified size increased by addexW X addedH at coordinates x,y.
+void drawPartialModifiedTexture(SDL_Texture *texture,SDL_Rect *src,int x,int y,int addedW,int addedH)
+{
+    SDL_Rect dest;
+    dest.x=x;
+    dest.y=y;
+    dest.w=src->w;
+    dest.h=src->h;
+    dest.w+=addedW;
+    dest.h+=addedH;
+
+    SDL_RenderCopy(app.renderer,texture,src,&dest);
+}

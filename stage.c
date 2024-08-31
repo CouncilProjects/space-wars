@@ -3,10 +3,11 @@
 extern App app;
 extern Stage stage;
 extern Entity *player;
+Entity *activeBoss,*destructionSequenceBoss;
 SDL_Texture *bulletTexture,*enemyTexture,*alienBulletTexture,*playerTexture,*explosionTexture,*pointTexture,*destructionTexture;
-int enemySpawnTime,stageResetTimer;
+int enemySpawnTime,stageResetTimer,warningBlink;
 
-//Initializes basic resources [fighter & bullet lists, player,textures,app function callers]
+//Initializes basic resources [fighter,bullet,debri,explotion,point lists, player,textures,app function callers,boss markers]
 void initStage(void)
 {
 
@@ -31,6 +32,8 @@ void initStage(void)
     
     destructionTexture=loadTexture("textures/destroy.png");
 
+    activeBoss=NULL;
+    destructionSequenceBoss=NULL;
     app.highScore=0;;
     resetStage();
 }
@@ -100,6 +103,17 @@ void resetStage(void)
 
     stage.destroyedTail=&stage.destroyedHead;
 
+    if(activeBoss!=NULL)
+    {
+        free(activeBoss);
+    }
+    if(destructionSequenceBoss!=NULL)
+    {
+        free(destructionSequenceBoss);
+    }
+    activeBoss=NULL;
+    destructionSequenceBoss=NULL;
+
     //reset score
     stage.score=0;
 
@@ -135,13 +149,16 @@ static void initPlayer()
 //Calls the series of functions that control the flow of the game [controlPlayer,handleShips,enemiesShoot,handleBullets,spawnEnemies,clipPlayer,resetStage]
 static void logic(void)
 {
-    handleBackround();
-    moveStarfield();
+    handleBackround(); //background.h
+    moveStarfield(); //background.h
+
     handlePoints();
     controlPlayer();
     moveDestroyed();
     handleShips();
     enemiesShoot();
+    moveBoss();
+    bossFire();
     handleBullets();
     spawnEnemies();
     clipPlayer();
@@ -153,8 +170,6 @@ static void logic(void)
         initHighScores();
     }
 }
-
-
 
 //moves the points and handles collection
 static void handlePoints()
@@ -184,6 +199,12 @@ static void handlePoints()
             stage.score++;
             app.highScore=SDL_max(stage.score,app.highScore);
             playSound(SND_POINT,ch_point);
+
+            if(stage.score%25==0) //every 25 points that the player collects call addBoss()
+            {
+                addBoss();
+            }
+            
         }
 
         if(--current->health<=0)
@@ -201,6 +222,45 @@ static void handlePoints()
 
     }
 }
+
+//If a boss is not present create one (Boss is an Entity pointed at by activeBoss pointer)
+void addBoss()
+{
+    if(activeBoss!=NULL)
+    {
+        return;
+    }
+    activeBoss=malloc(sizeof(Entity));
+    memset(activeBoss,0,sizeof(Entity));
+    activeBoss->texture=enemyTexture;
+    SDL_QueryTexture(activeBoss->texture,NULL,NULL,&activeBoss->w,&activeBoss->h);
+    activeBoss->w+=100;
+    activeBoss->h+=100;
+    activeBoss->x=SCREEN_WIDTH+(activeBoss->w*2);
+    activeBoss->y=SCREEN_HEIGHT/2+(-300+(rand()%600));
+    courseCorrection(activeBoss);
+
+    activeBoss->dx=rand()%2+1;
+    activeBoss->dy=rand()%3+1;
+    activeBoss->health=(stage.score/20)*8 +1;
+    activeBoss->reload=0;
+
+    activeBoss->side=ALIEN_SIDE;
+}
+
+// Makes enemies unable to spawn off-screen
+static void courseCorrection(Entity *enemy)
+{
+    if(enemy->y+enemy->h > SCREEN_HEIGHT)
+    {
+        enemy->y-=(int)enemy->h/2;
+    }
+    else if(enemy->y+enemy->h < 0)
+    {
+        enemy->y+=(int)enemy->h/2;
+    }
+}
+
 //Controls player actions based on user input
 static void controlPlayer(void)
 {
@@ -245,6 +305,157 @@ static void controlPlayer(void)
 
 }
 
+//Player specific firing mechanism
+static void fire(void)
+{
+    
+    Entity *bullet;
+
+    bullet=malloc(sizeof(Entity));
+    memset(bullet,0,sizeof(Entity));
+
+    //insert new bullet in the list 
+    stage.bulletTail->next=bullet;
+    stage.bulletTail=bullet;
+
+    bullet->x=player->x;
+    bullet->y=player->y;
+    bullet->dx=PLAYER_BULLET_SPEED;
+    bullet->dy=0;
+    bullet->health=1;
+    bullet->texture=bulletTexture;
+    SDL_QueryTexture(bullet->texture,NULL,NULL,&bullet->w,&bullet->h);
+    bullet->side=PLAYER_SIDE;
+
+    bullet->y= player->y+(player->h/2)-(bullet->h/2);
+    
+
+    //tell it that 8 frames must pass before firing again. 
+    player->reload=8;
+}
+
+//Moves the destroyed texture adding explosions and debri when it ends
+static void moveDestroyed()
+{
+    Entity *current,*prev;
+    prev=&stage.destroyedHead;
+    for(current=stage.destroyedHead.next;current!=NULL;prev=current,current=current->next)
+    {
+        current->x+=current->dx;
+        current->y+=current->dy;
+        current->health--;
+
+        if(current==destructionSequenceBoss && current->health%12==0)
+        {
+            playSound(SND_ALIEN_DIE,ch_any);
+        }
+
+        if(current->health<=0)
+        {
+            if(current==stage.destroyedTail)
+            {
+                stage.destroyedTail=prev;
+            }
+            
+            if(current==destructionSequenceBoss)
+            {
+                destructionSequenceBoss=NULL;
+            }
+            playSound(SND_ALIEN_DIE,ch_any);
+            addExplosion(current->x+41,current->y+50,4);
+            addDebris(current);
+            prev->next=current->next;
+            free(current);
+            current=prev;
+            
+        }
+    }
+}
+
+//Creates a series of explosions in different colors
+static void addExplosion(int x,int y,int num)
+{
+    Explosion *ex;
+    int i;
+    for(i=0;i<num;i++)
+    {
+        ex=malloc(sizeof(Explosion));
+        memset(ex,0,sizeof(Explosion));
+
+        stage.explosionTail->next=ex;
+        stage.explosionTail=ex;
+
+        ex->x = x + (rand() % 32) - (rand() % 32);
+        ex->y = y + (rand() % 32) - (rand() % 32);
+        ex->dx = (rand() % 10) - (rand() % 10);
+        ex->dy = (rand() % 10) - (rand() % 10);
+
+        ex->dx /= 10;
+        ex->dy /= 10;
+
+        //we queque up many explotions to make colors
+        switch (rand()%4)
+        {
+        case 0:
+            ex->r=255;
+            break;
+        case 1:
+            ex->r=255;
+            ex->g=128;
+            break;
+        case 2:
+            ex->r=255;
+            ex->g=255;
+            break;
+        
+        default:
+            ex->r = 255;
+            ex->g = 255;
+            ex->b = 255;
+            break;
+        }
+        //a is its time to live
+        ex->a = rand() % FPS * 3;
+    }
+}
+
+//cuts the texture to 4 parts adding each one as a "debri"
+static void addDebris(Entity *en)
+{
+    Debris *d;
+    int x, y, w, h;
+    //we devide by 2 then with a double for it will split the texture to 4 parts. 
+    w=en->w/2;
+    h=en->h/2;
+
+    for(y=0;y<en->h;y+=h)
+    {
+        for(x=0;x<en->w;x+=w)
+        {
+            d=malloc(sizeof(Debris));
+            memset(d,0,sizeof(Debris));
+
+            d->x=en->x+w;
+            d->y=en->y+h;
+
+            d->dx=(rand()%5)-(rand()%5);
+            d->dy=-(5+rand()%12);
+            d->life=FPS*2;
+            d->texture=en->texture;
+
+            // what part of the texture it covers. 
+            d->rect.x=x;
+            d->rect.y=y;
+            d->rect.w=w;
+            d->rect.h=h;
+
+            stage.debrisTail->next=d;
+            stage.debrisTail=d;
+
+        }
+    }
+}
+
 // Moves every ship on screen (inside the fighter list) removing those that are off-screen or destroyed
 static void handleShips()
 {
@@ -256,9 +467,6 @@ static void handleShips()
     {
         current->x+=current->dx;
         current->y+=current->dy;
-
-        current->x += current->dx;
-        current->y += current->dy;
 
         if (current != player && current->x < -current->w)
         {
@@ -314,53 +522,7 @@ static void addPoint(int x,int y)
     stage.pointTail=point;
 }
 
-//Creates a series of explosions in different colors
-static void addExplosion(int x,int y,int num)
-{
-    Explosion *ex;
-    int i;
-    for(i=0;i<num;i++)
-    {
-        ex=malloc(sizeof(Explosion));
-        memset(ex,0,sizeof(Explosion));
-
-        stage.explosionTail->next=ex;
-        stage.explosionTail=ex;
-
-        ex->x = x + (rand() % 32) - (rand() % 32);
-        ex->y = y + (rand() % 32) - (rand() % 32);
-        ex->dx = (rand() % 10) - (rand() % 10);
-        ex->dy = (rand() % 10) - (rand() % 10);
-
-        ex->dx /= 10;
-        ex->dy /= 10;
-
-        //we queque up many explotions to make colors
-        switch (rand()%4)
-        {
-        case 0:
-            ex->r=255;
-            break;
-        case 1:
-            ex->r=255;
-            ex->g=128;
-            break;
-        case 2:
-            ex->r=255;
-            ex->g=255;
-            break;
-        
-        default:
-            ex->r = 255;
-            ex->g = 255;
-            ex->b = 255;
-            break;
-        }
-        //a is its time to live
-        ex->a = rand() % FPS * 3;
-    }
-}
-
+//Adds a new destryed animation to be tracked
 static void addDestroyed(Entity *en)
 {
     Entity *newDestroyed=malloc(sizeof(Entity));
@@ -379,91 +541,14 @@ static void addDestroyed(Entity *en)
     stage.destroyedTail=newDestroyed;
 }
 
-static void moveDestroyed()
-{
-    Entity *current,*prev;
-    prev=&stage.destroyedHead;
-    for(current=stage.destroyedHead.next;current!=NULL;prev=current,current=current->next)
-    {
-        current->x+=current->dx;
-        current->health--;
-
-        if(current->health==0)
-        {
-            if(current==stage.destroyedTail)
-            {
-                stage.destroyedTail=prev;
-            }
-            
-            playSound(SND_ALIEN_DIE,ch_any);
-            addExplosion(current->x+41,current->y+50,4);
-            addDebris(current);
-            prev->next=current->next;
-            free(current);
-            current=prev;
-        }
-    }
-}
-
-static void drawDestroyed()
-{
-    SDL_Rect rect;
-    Entity *current;
-    for(current=stage.destroyedHead.next;current!=NULL;current=current->next)
-    {
-        rect.y=0;
-        rect.h=current->h;
-        rect.w=current->w; //there are 15 phases in the destroy texture
-        rect.x=rect.w*(current->health/12); // since it "lives for 3 seconds" each phase lasts for 60*3/15 = 12 frames. 
-        drawPartialTexture(current->texture,&rect,current->x,current->y);
-    }
-}
-
-
-//cuts the texture to 4 parts adding each one as a "debri"
-static void addDebris(Entity *en)
-{
-    Debris *d;
-    int x, y, w, h;
-    //we devide by 2 then with a double for it will split the texture to 4 parts. 
-    w=en->w/2;
-    h=en->h/2;
-
-    for(y=0;y<en->h;y+=h)
-    {
-        for(x=0;x<en->w;x+=w)
-        {
-            d=malloc(sizeof(Debris));
-            memset(d,0,sizeof(Debris));
-
-            d->x=en->x+w;
-            d->y=en->y+h;
-
-            d->dx=(rand()%5)-(rand()%5);
-            d->dy=-(5+rand()%12);
-            d->life=FPS*2;
-            d->texture=en->texture;
-
-            // what part of the texture it covers. 
-            d->rect.x=x;
-            d->rect.y=y;
-            d->rect.w=w;
-            d->rect.h=h;
-
-            stage.debrisTail->next=d;
-            stage.debrisTail=d;
-
-        }
-    }
-}
-//Orders every enemy ship with available projectile to shoot.
+//Orders every non-boss enemy ship with available projectile to shoot.
 static void enemiesShoot(void)
 {
     Entity *e;
 
     for (e = stage.fighterHead.next ; e != NULL ; e = e->next)
     {
-        if (e != player && player != NULL && --e->reload <= 0)
+        if (e != player && player != NULL && --e->reload <= 0 && (e->x+e->w)/2>0 && (e->x+e->w)/2<SCREEN_WIDTH && (e->y+e->h)/2>0 && (e->x+e->w)/2<SCREEN_HEIGHT)
         {
             playSound(SND_ALIEN_FIRE,ch_alien_fire);
             fireAlienBullet(e);
@@ -471,7 +556,7 @@ static void enemiesShoot(void)
     }
 }
 
-//Enemy specific firing mechanism
+//Common enemy specific firing mechanism
 static void fireAlienBullet(Entity *striker)
 {
     Entity *bullet;
@@ -493,36 +578,96 @@ static void fireAlienBullet(Entity *striker)
     bullet->dx *= ALIEN_BULLET_SPEED;
     bullet->dy *= ALIEN_BULLET_SPEED;
 
-    striker->reload = (rand() % FPS * 2);
+    striker->reload = (rand() % FPS * 3);
 }
 
-//Player specific firing mechanism
-static void fire(void)
+
+//If there is an active boss move it. changing its direction if it tries to go above or below the screen
+static void moveBoss()
 {
-    
+    if(activeBoss==NULL)
+    {
+        return;
+    }
+
+    activeBoss->x-=activeBoss->dx;
+    activeBoss->y-=activeBoss->dy;
+    if(activeBoss->y<0 || activeBoss->y+activeBoss->h>SCREEN_HEIGHT)
+    {
+        activeBoss->dy*=-1;
+    }
+
+    if(activeBoss->health<=0) //if it is destroyed on screen, call its destruction sequence and free resources
+    {
+        bossDeath();
+        free(activeBoss);
+        activeBoss=NULL;
+        return;
+    }
+    else if(activeBoss->x+activeBoss->w<0) //if off screen simple free resources
+    {
+        free(activeBoss);
+        activeBoss=NULL;
+        return;
+    }
+}
+
+//create a new destroyed animation sequence, and mark it as a boss death by placing the destructionSequenceBoss pointer
+static void bossDeath()
+{
+    Entity *newDestroyed=malloc(sizeof(Entity));
+    memset(newDestroyed,0,sizeof(Entity));
+
+    destructionSequenceBoss=newDestroyed;
+    stage.destroyedTail->next=newDestroyed;
+    stage.destroyedTail=newDestroyed;
+
+    newDestroyed->texture=destructionTexture;
+    SDL_QueryTexture(newDestroyed->texture,NULL,NULL,&newDestroyed->w,&newDestroyed->h);
+
+    newDestroyed->w/=15; //there are 15 phases. 
+
+    newDestroyed->x=activeBoss->x-41;//due to the difference in size compared with the normal texture
+    newDestroyed->y=activeBoss->y-50;
+
+    newDestroyed->dx=-activeBoss->dx;
+
+    for(int i=0;i<10;i++) //award 10 points for victory
+    {
+        addPoint(activeBoss->x+(-4+rand()%8),activeBoss->y+(-4+rand()%8));
+    }
+
+    newDestroyed->dy+=2; //will start "going down"
+    newDestroyed->health=FPS*3; //will be on screen for 3 seconds before fully exploding
+}
+
+//a Boss-specific firing mechanism fires faster and bullets are also faster
+static void bossFire()
+{
+    if(activeBoss==NULL || player==NULL|| --activeBoss->reload>0)
+    {
+        return;
+    }
     Entity *bullet;
 
-    bullet=malloc(sizeof(Entity));
-    memset(bullet,0,sizeof(Entity));
+    bullet = malloc(sizeof(Entity));
+    memset(bullet, 0, sizeof(Entity));
+    stage.bulletTail->next = bullet;
+    stage.bulletTail = bullet;
 
-    //insert new bullet in the list 
-    stage.bulletTail->next=bullet;
-    stage.bulletTail=bullet;
+    bullet->health = 1;
+    bullet->texture = alienBulletTexture;
+    bullet->side = ALIEN_SIDE;
+    SDL_QueryTexture(bullet->texture, NULL, NULL, &bullet->w, &bullet->h);
 
-    bullet->x=player->x;
-    bullet->y=player->y;
-    bullet->dx=PLAYER_BULLET_SPEED;
-    bullet->dy=0;
-    bullet->health=1;
-    bullet->texture=bulletTexture;
-    SDL_QueryTexture(bullet->texture,NULL,NULL,&bullet->w,&bullet->h);
-    bullet->side=PLAYER_SIDE;
+    bullet->x +=activeBoss->x+ (activeBoss->w / 2) - (bullet->w / 2);
+    bullet->y +=activeBoss->y+ (activeBoss->h / 2) - (bullet->h / 2);
+    calcSlope(player->x + (player->w / 2), player->y + (player->h / 2), activeBoss->x+(activeBoss->w/2), activeBoss->y+(activeBoss->h/2), &bullet->dx, &bullet->dy);
 
-    bullet->y= player->y+(player->h/2)-(bullet->h/2);
-    
+    bullet->dx *= ALIEN_BULLET_SPEED*2;
+    bullet->dy *= ALIEN_BULLET_SPEED*2;
 
-    //tell it that 8 frames must pass before firing again. 
-    player->reload=8;
+    activeBoss->reload = (rand() % FPS * 2/3);
 }
 
 //Moves every bullet existing on the map. removing those out of the screen or those that collided
@@ -555,7 +700,7 @@ static void handleBullets(void)
     }
 }
 
-//Checks if the bullet has collided with any ships.
+//Checks if the bullet has collided with any ships. Including boss ships
 static int bulletHit(Entity *bullet)
 {
     //we check each fighter to see if it collided. 
@@ -563,10 +708,19 @@ static int bulletHit(Entity *bullet)
 
     for(current=stage.fighterHead.next;current!=NULL;current=current->next)
     {
-        if(bullet->side!=current->side && bullet->health==1 && collision(bullet->x,bullet->y,bullet->w,bullet->h,current->x,current->y,current->w,current->h))
+        if(bullet->side!=current->side && bullet->health==1 //if a ship is hit by an active bullet of another side
+            && collision(bullet->x,bullet->y,bullet->w,bullet->h,current->x,current->y,current->w,current->h))
         {
             bullet->health=0;
             current->health-=1;
+            return 1;
+        }
+
+        if(activeBoss!=NULL && bullet->side!=activeBoss->side && bullet->health==1  //if an active boss is hit by an active bullet of another side
+            && collision(bullet->x,bullet->y,bullet->w,bullet->h,activeBoss->x,activeBoss->y,activeBoss->w,activeBoss->h)) 
+        {
+            bullet->health=0;
+            activeBoss->health-=1;
             return 1;
         }
     }
@@ -580,7 +734,7 @@ static void spawnEnemies()
 {
     enemySpawnTime--;
 
-    if(enemySpawnTime>0)
+    if(enemySpawnTime>0 || activeBoss!=NULL) //no new enemies spawn while a boss lives
     {
         return;
     }
@@ -686,30 +840,18 @@ static void handleDebris()
     
 }
 
-// Makes enemies unable to spawn off-screen
-static void courseCorrection(Entity *enemy)
-{
-    if(enemy->y+enemy->h > SCREEN_HEIGHT)
-    {
-        enemy->y-=(int)enemy->h/2;
-    }
-    else if(enemy->y+enemy->h < 0)
-    {
-        enemy->y+=(int)enemy->h/2;
-    }
-}
-
 //Calls the series of functions that control the graphics of the game [drawShips,drawBullets]
 static void draw(void)
 {
-    drawBackround();
-    drawStarfield();
+    drawBackround(); //background.h
+    drawStarfield(); //background.h
+
     drawPoints();
+    drawBoss();
     drawDestroyed();
     drawShips();
     drawBullets();
     drawExplosions();
-
     drawDebris();
     drawHUD();
 }
@@ -727,13 +869,54 @@ static void drawPoints()
     }
 }
 
+//If there is a boss present it will be drawn. 
+static void drawBoss()
+{
+    if(activeBoss==NULL || activeBoss->x>SCREEN_WIDTH)
+    {
+        return;
+    }
+
+    drawModifiedTexture(activeBoss->texture,activeBoss->x,activeBoss->y,100,100);
+}
+
+//draws the destroy animation for each ship
+static void drawDestroyed()
+{
+    SDL_Rect rect;
+    Entity *current;
+    for(current=stage.destroyedHead.next;current!=NULL;current=current->next)
+    {
+        rect.y=0;
+        rect.h=current->h;
+        rect.w=current->w; //there are 15 phases in the destroy texture
+        rect.x=rect.w*(current->health/12); // since it "lives for 3 seconds" each phase lasts for 60*3/15 = 12 frames. 
+
+        if(current==destructionSequenceBoss)
+        {
+            drawPartialModifiedTexture(current->texture,&rect,current->x-41,current->y-50,200,200);
+        }
+        else
+        {
+            drawPartialTexture(current->texture,&rect,current->x,current->y);
+        }
+    }
+}
+
 //Draws every ship on screen with updated coordinates
 static void drawShips(void)
 {
     Entity *current;
     for(current=stage.fighterHead.next;current!=NULL;current=current->next)
     {
-        drawTexture(current->texture,current->x,current->y);
+        if(current==activeBoss)
+        {
+            drawModifiedTexture(current->texture,current->x,current->y,100,100);
+        }
+        else
+        {
+            drawTexture(current->texture,current->x,current->y);
+        }
     }
 }
 
@@ -783,6 +966,10 @@ static void drawExplosions()
 //Displayes the text for score and highscore
 static void drawHUD()
 {
+    if(warningBlink>FPS)
+    {
+        warningBlink=0;
+    }
     //drawText supports variable arguments
     drawText(10,10,text_left,255,255,255,"SCORE: %03d",stage.score);
     if(player!=NULL)
@@ -802,5 +989,14 @@ static void drawHUD()
     else
     {
         drawText(1000,10,text_left,255,255,255,"HIGHSCORE: %03d",app.highScore);
+    }
+
+    if(activeBoss!=NULL && activeBoss->x>SCREEN_WIDTH && ++warningBlink>FPS/2)
+    {
+        drawText(400,40,text_left,255,0,0,"!!INCOMING CAPITAL SHIP!!");
+    }
+    else if(activeBoss!=NULL && activeBoss->x<SCREEN_WIDTH)
+    {
+        drawText(600,40,text_center,200,100,255,"BOSS HP:%d",activeBoss->health);
     }
 }

@@ -24,4 +24,10 @@ void drawTexture(SDL_Texture *texture,int x,int y);
 
 //Draw the src part of the given texture at coordinates x,y.
 void drawPartialTexture(SDL_Texture *texture,SDL_Rect *src,int x,int y);
+
+//Draws an entire texture and displays it in a modified size increased by addexW X addedH at coordinates x,y.
+void drawModifiedTexture(SDL_Texture *texture,int x,int y,int addedW,int addedH);
+
+//Draws a part of a texture and displays it in a modified size increased by addexW X addedH at coordinates x,y.
+void drawPartialModifiedTexture(SDL_Texture *texture,SDL_Rect *src,int x,int y,int addedW,int addedH);
 #endif
