@@ -1,0 +1,30 @@
+# Makefile for SDL2 Project with MinGW64
+
+# Compiler and flags
+CC := gcc
+CFLAGS := -I"C:\mingw64\include\SDL2" -Dmain=SDL_main
+LDFLAGS := -L"C:\mingw64\lib" -lSDL2 -lSDL2_image -lSDL2_mixer -mwindows
+
+# Target executable
+TARGET := Space_Wars.exe
+
+# Source files
+SRCS := $(wildcard *.c)
+
+# Object files
+OBJS := $(SRCS:.c=.o)
+
+# Default target
+all: $(TARGET)
+
+# Link the executable
+$(TARGET): $(OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS)
+
+# Compile source files to object files
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# Clean up build files
+clean:
+	del /f $(TARGET) $(OBJS)

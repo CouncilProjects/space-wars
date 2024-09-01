@@ -1,0 +1,49 @@
+Building the Project
+
+This file contains information about building the project.
+
+Directory Structure:
+
+    src/: Contains the .c and .h files of the game.
+    sound/: Contains the sounds and music files of the game.
+    sound/: Contains the images used as textures for the game.
+    libs/: Contains the needed .so files to make a self-contained version of the game for Linux
+    dll/: Contains the dlls needed to make a self-contained version of the game for Windows
+
+Makefiles: There are two Makefiles present:
+
+    MakefileWIN for Windows
+    MakefileLIN for Linux
+
+Usage:
+
+    To build for Windows: make -f MakefileWIN
+    To build for Linux: make -f MakefileLIN
+
+These commands will produce either an executable (.exe) for Windows or a binary for Linux on the current directory. (Requirment: the src/ directory needs to be in the same directory as the makefiles)
+
+Creating a Self-Contained Version for Linux:
+
+  1)  Run makeLib.sh to create a libs directory: ./makeLib.sh Space_Wars
+
+  2)  Copy the following:
+        The binary produced by make
+        The sound/ and textures/ directories
+        The libs/ directory
+        The run.sh script
+
+  3)  Place these items in their own folder and run the game using run.sh.
+
+This will allow you to play the game even on fresh installations without the need for additional libraries.
+
+Creating a Self-Contained Version for Windows:
+
+  1) Copy the following:
+        The .exe file
+        The sound/ and textures/ directories
+        
+  2) Place them in a directory of your choice 
+  
+  3) Copy each .dll file from the dll/ directory (not the directory itself) and place them in the same directory as the .exe file.
+
+This will allow you to play the game even on fresh installations without the need for additional libraries.

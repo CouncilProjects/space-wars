@@ -1,0 +1,43 @@
+# Makefile for SDL2 Project on Linux
+
+# Compiler
+CC = gcc
+
+# Compiler flags (with SDL2 settings)
+CFLAGS = $(shell sdl2-config --cflags)
+LDFLAGS = $(shell sdl2-config --libs) -lSDL2_image -lSDL2_mixer
+
+# Directories
+SRC_DIR = src
+OBJ_DIR = $(SRC_DIR)
+
+# Target executable
+TARGET = Space_Wars
+
+# Source files (find all .c files in src folder)
+SRCS = $(wildcard $(SRC_DIR)/*.c)
+
+# Object files (keep .o files in src folder)
+OBJS = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(SRCS))
+
+# Default rule to build the target
+all: $(TARGET)
+
+# Rule to link the executable
+$(TARGET): $(OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS)
+
+# Rule to compile .c files to .o files
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# Rule to clean up the object files and the executable
+clean:
+	rm -f $(OBJ_DIR)/*.o $(TARGET)
+
+# Rule to print a message about available commands
+help:
+	@echo "Usage: make [target]"
+	@echo "Targets:"
+	@echo "  all     - Build the executable"
+	@echo "  clean   - Remove build artifacts"
