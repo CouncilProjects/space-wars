@@ -6,7 +6,7 @@
 
 - **Move**: Arrow keys or `WASD` keys
 - **Fire**: `Space` key
-- **Pause**: `P` or `p` key
+- **Pause**: `Esc`  key
 - **Objective**: Dodge the green bullets and be cautious of the periodic boss ships that come into play.
 
 Sneak peaks
