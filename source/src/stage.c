@@ -466,7 +466,7 @@ static void handleShips()
             current->health = 0;
         }
 
-        if (current->health == 0)
+        if (current->health <= 0)
         {
             if (current == player)
             {
