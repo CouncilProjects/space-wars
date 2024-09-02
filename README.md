@@ -41,6 +41,6 @@ If you prefer to build the game from source:
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-username/space-wars.git
+   git clone https://github.com/CouncilProjects/space-wars.git
    cd space-wars/source
    And read the READTHIS.txt in there
