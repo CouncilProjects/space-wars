@@ -1,6 +1,7 @@
 Building the Project
 
 This file contains information about building the project.
+NOTE: You will need the development files of SDL2,SDL2_image,SDL2_mixer to compile your own game.
 
 Directory Structure:
 
