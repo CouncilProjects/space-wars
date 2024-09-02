@@ -24,9 +24,9 @@ This repository contains the following folders:
 
 - **`source`**: Contains all the necessary parts to compile the game yourself. This includes the C source code and all dependencies needed to create self-contained versions of the game for both Linux and Windows (so the end user does not need to have the SDL2 libraries pre-installed).
   
-- **`windows_release`**: Contains the pre-compiled version of the game for Windows, along with all required assets.
+- **`windows-release`**: Contains the pre-compiled version of the game for Windows, along with all required assets.
   
-- **`linux_release`**: Contains the pre-compiled version of the game for Linux, along with all required assets.
+- **`linux-release`**: Contains the pre-compiled version of the game for Linux, along with all required assets.
 
 ## Quick Start
 
