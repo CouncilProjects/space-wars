@@ -32,8 +32,8 @@ This repository contains the following folders:
 
 If you just want to start playing immediately:
 
-1. **Windows Users**: Download [`windows-release.zip`], extract it, and read the README.txt
-2. **Linux Users**: Download [`linux-release.zip`], extract it, and read the READTHIS.txt
+1. **Windows Users**: Download windows-release.zip, extract it, and read the README.txt
+2. **Linux Users**: Download linux-release.zip, extract it, and read the READTHIS.txt
 
 ## Building the Game
 
