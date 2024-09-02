@@ -4,7 +4,7 @@ extern App app;
 extern Stage stage;
 extern Entity *player;
 Entity *activeBoss,*destructionSequenceBoss;
-int enemySpawnTime,stageResetTimer,warningBlink;
+int enemySpawnTime,stageResetTimer,warningBlink,bossOnScreen;
 
 //Initializes basic resources [fighter,bullet,debri,explotion,point lists, player,textures,app function callers,boss markers]
 void initStage(void)
@@ -23,6 +23,7 @@ void initStage(void)
 
     activeBoss=NULL;
     destructionSequenceBoss=NULL;
+    bossOnScreen=0;
     app.highScore=0;;
     resetStage();
 }
@@ -587,6 +588,10 @@ static void moveBoss()
         return;
     }
 
+    if(activeBoss->x+activeBoss->w<SCREEN_WIDTH)
+    {
+        bossOnScreen=1;
+    }
     activeBoss->x-=activeBoss->dx;
     activeBoss->y-=activeBoss->dy;
     if(activeBoss->y<0 || activeBoss->y+activeBoss->h>SCREEN_HEIGHT)
@@ -594,17 +599,17 @@ static void moveBoss()
         activeBoss->dy*=-1;
     }
 
+    if(activeBoss->x<0 || (bossOnScreen && activeBoss->x+activeBoss->w>SCREEN_WIDTH))
+    {
+        activeBoss->dx*=-1;
+    }
+
     if(activeBoss->health<=0) //if it is destroyed on screen, call its destruction sequence and free resources
     {
         bossDeath();
         free(activeBoss);
         activeBoss=NULL;
-        return;
-    }
-    else if(activeBoss->x+activeBoss->w<0) //if off screen simple free resources
-    {
-        free(activeBoss);
-        activeBoss=NULL;
+        bossOnScreen=0;
         return;
     }
 }

@@ -2,7 +2,7 @@
 
 void pause()
 {
-    if(app.keys[SDL_SCANCODE_P]!=1)
+    if(app.keys[SDL_SCANCODE_ESCAPE]!=1)
     {
         return;
     }

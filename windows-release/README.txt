@@ -3,6 +3,8 @@ Space Wars
 How to install:
 All you have to do is run the setup.exe and follow the prompts
 
+Space Wars
+
 How to Play
 
 Welcome to Space Wars! Here’s a quick guide on how to play the game:
@@ -14,7 +16,7 @@ Welcome to Space Wars! Here’s a quick guide on how to play the game:
    - Press the Spacebar to fire bullets at enemies.
 
 3. Pause the Game:
-   - Press P or p to pause the game.
+   - Press Escape (Esc) to pause the game.
 
 4. Collect Points:
    - Destroy enemies to collect points. Points are left behind by destroyed enemies and can be collected for your score.
