@@ -23,7 +23,8 @@ Sneak peaks
 This repository contains the following folders:
 
 - **`source`**: Contains all the necessary parts to compile the game yourself. This includes the C source code and all dependencies needed to create self-contained versions of the game for both Linux and Windows (so the end user does not need to have the SDL2 libraries pre-installed).
-  
+
+  Existing in Releases
 - **`windows-release`**: Contains the pre-compiled version of the game for Windows, along with all required assets.
   
 - **`linux-release`**: Contains the pre-compiled version of the game for Linux, along with all required assets.
@@ -33,7 +34,7 @@ This repository contains the following folders:
 If you just want to start playing immediately:
 
 1. **Windows Users**: Download windows-release.zip, extract it, and read the README.txt
-2. **Linux Users**: Download linux-release.zip, extract it, and read the READTHIS.txt
+2. **Linux Users**: Download linux-release.zip, extract it, and read the README.txt
 
 ## Building the Game
 
